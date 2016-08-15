@@ -53,6 +53,7 @@
 #include <Logging/LoggerManager.h>
 
 #if defined(WIN32)
+#include <Windows.h>
 #include <crtdbg.h>
 #endif
 
@@ -213,6 +214,10 @@ struct TransferCommand {
           auto value = ar.next();
           bool ok = m_currency.parseAmount(value, de.amount);
           if (!ok || 0 == de.amount) {
+            
+#undef max
+#undef min
+            
             logger(ERROR, BRIGHT_RED) << "amount is wrong: " << arg << ' ' << value <<
               ", expected number from 0 to " << m_currency.formatAmount(std::numeric_limits<uint64_t>::max());
             return false;
@@ -1341,6 +1346,9 @@ void simple_wallet::printConnectionError() const {
 
 int main(int argc, char* argv[]) {
 #ifdef WIN32
+	setlocale(LC_ALL, "");
+  SetConsoleCP(1251);
+  SetConsoleOutputCP(1251);
   _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
