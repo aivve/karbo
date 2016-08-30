@@ -25,6 +25,8 @@
 #include <set>
 #include <sstream>
 
+#include <locale>
+
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/program_options.hpp>
@@ -56,6 +58,8 @@
 #include <Windows.h>
 #include <crtdbg.h>
 #endif
+
+
 
 using namespace CryptoNote;
 using namespace Logging;
@@ -214,10 +218,12 @@ struct TransferCommand {
           auto value = ar.next();
           bool ok = m_currency.parseAmount(value, de.amount);
           if (!ok || 0 == de.amount) {
-            
+
+#if defined(WIN32)
 #undef max
 #undef min
-            
+#endif
+
             logger(ERROR, BRIGHT_RED) << "amount is wrong: " << arg << ' ' << value <<
               ", expected number from 0 to " << m_currency.formatAmount(std::numeric_limits<uint64_t>::max());
             return false;
@@ -1347,10 +1353,11 @@ void simple_wallet::printConnectionError() const {
 int main(int argc, char* argv[]) {
 #ifdef WIN32
 	setlocale(LC_ALL, "");
-  SetConsoleCP(1251);
-  SetConsoleOutputCP(1251);
+    SetConsoleCP(1251);
+    SetConsoleOutputCP(1251);
   _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
+
 
   po::options_description desc_general("General options");
   command_line::add_arg(desc_general, command_line::arg_help);
