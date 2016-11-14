@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers, The Karbovanets developers
 //
 // This file is part of Bytecoin.
 //
@@ -40,6 +40,8 @@
 #include <System/Dispatcher.h>
 #include <System/Ipv4Address.h>
 
+std::string remote_fee_address;
+
 namespace CryptoNote
 {
   /************************************************************************/
@@ -56,6 +58,7 @@ namespace CryptoNote
 
     bool process_command(const std::vector<std::string> &args);
     std::string get_commands_str();
+    std::string getFeeAddress();
 
     const CryptoNote::Currency& currency() const { return m_currency; }
 

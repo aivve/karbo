@@ -1,4 +1,5 @@
-// Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers, The Karbovanets developers
+// Copyright (c) 2014-2016 XDN developers
 //
 // This file is part of Bytecoin.
 //
@@ -1527,6 +1528,28 @@ bool simple_wallet::show_blockchain_height(const std::vector<std::string>& args)
   }
 
   return true;
+}
+//----------------------------------------------------------------------------------------------------
+std::string simple_wallet::getFeeAddress() {
+  
+  HttpClient httpClient(m_dispatcher, m_daemon_host, m_daemon_port);
+
+  HttpRequest req;
+  HttpResponse res;
+
+  req.setUrl("/feeaddress");
+  httpClient.request(req, res);
+
+  if (res.getStatus() != HttpResponse::STATUS_200) {
+    throw std::runtime_error("Remote server returned code " + std::to_string(res.getStatus()));
+  }
+
+  std::string address;
+  if (!processServerFeeAddressResponse(res.getBody(), address)) {
+    throw std::runtime_error("Failed to parse server response");
+  }
+
+  return address;
 }
 //----------------------------------------------------------------------------------------------------
 bool simple_wallet::transfer(const std::vector<std::string> &args) {
