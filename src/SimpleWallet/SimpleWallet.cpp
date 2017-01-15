@@ -552,17 +552,13 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm) {
   }
 
   if (m_generate_new.empty() && m_wallet_file_arg.empty()) {
-
-    std::cout << "Nor 'generate-new-wallet' neither 'wallet-file' argument was specified.\nWhat do you want to do?\n[O]pen existing wallet, [G]enerate new wallet file, [I]mport wallet or [E]xit.\n";
-
+    std::cout << "Nor 'generate-new-wallet' neither 'wallet-file' argument was specified.\nWhat do you want to do?\n[O]pen existing wallet, [G]enerate new wallet file, [I]mport wallet, [R]estore backup wallet or [E]xit.\n";
     char c;
     do {
       std::string answer;
       std::getline(std::cin, answer);
       c = answer[0];
-
-      if (!(c == 'O' || c == 'G' || c == 'E' || c == 'I' || c == 'o' || c == 'g' || c == 'e' || c == 'i')) {
-
+	  if (!(c == 'O' || c == 'G' || c == 'E' || c == 'I' || c == 'R' || c == 'o' || c == 'g' || c == 'e' || c == 'i' || c == 'r')) {
         std::cout << "Unknown command: " << c <<std::endl;
       } else {
         break;
@@ -584,14 +580,16 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm) {
 
     if (c == 'i' || c == 'I') {
       m_import_new = userInput;
-    } else if (c == 'g' || c == 'G') {
+	} else if (c == 'r' || c == 'R') {
+		m_restore_new = userInput;
+	} else if (c == 'g' || c == 'G') {
       m_generate_new = userInput;
     } else {
       m_wallet_file_arg = userInput;
     }
   }
 
-  if (!m_generate_new.empty() && !m_wallet_file_arg.empty() && !m_import_new.empty()) {
+  if (!m_generate_new.empty() && !m_wallet_file_arg.empty() && !m_import_new.empty() && !m_restore_new.empty()) {
     fail_msg_writer() << "you can't specify 'generate-new-wallet' and 'wallet-file' arguments simultaneously";
     return false;
   }
@@ -602,15 +600,15 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm) {
   }
 
   std::string walletFileName;
-
-    if (!m_generate_new.empty() || !m_import_new.empty()) {
+  if (!m_generate_new.empty() || !m_import_new.empty() || !m_restore_new.empty()) {
     std::string ignoredString;
     if (!m_generate_new.empty()) {
       WalletHelper::prepareFileNames(m_generate_new, ignoredString, walletFileName);
     } else if (!m_import_new.empty()) {
       WalletHelper::prepareFileNames(m_import_new, ignoredString, walletFileName);
-    }
-
+	} else if (!m_restore_new.empty()) {
+      WalletHelper::prepareFileNames(m_restore_new, ignoredString, walletFileName);
+	}
     boost::system::error_code ignore;
     if (boost::filesystem::exists(walletFileName, ignore)) {
       fail_msg_writer() << walletFileName << " already exists";
@@ -749,6 +747,39 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm) {
     if (!writeAddressFile(walletAddressFile, m_wallet->getAddress())) {
       logger(WARNING, BRIGHT_RED) << "Couldn't write wallet address file: " + walletAddressFile;
     }
+  } else if (!m_restore_new.empty()) {
+	  std::string walletAddressFile = prepareWalletAddressFilename(m_restore_new);
+	  boost::system::error_code ignore;
+	  if (boost::filesystem::exists(walletAddressFile, ignore)) {
+		  logger(ERROR, BRIGHT_RED) << "Address file already exists: " + walletAddressFile;
+		  return false;
+	  }
+
+	  std::string private_key_string;
+	  
+	  do {
+		  std::cout << "Private Key: ";
+		  std::getline(std::cin, private_key_string);
+		  boost::algorithm::trim(private_key_string);
+	  } while (private_key_string.empty());
+	  
+	  AccountKeys keys;
+	  uint64_t addressPrefix;
+	  std::string data;
+
+	  if (Tools::Base58::decode_addr(private_key_string, addressPrefix, data) && addressPrefix == parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX &&
+		  data.size() == sizeof(keys)) {
+		  std::memcpy(&keys, data.data(), sizeof(keys));
+	  }
+
+	  if (!new_wallet(keys, walletFileName, pwd_container.password())) {
+		  logger(ERROR, BRIGHT_RED) << "account creation failed";
+		  return false;
+	  }
+
+	  if (!writeAddressFile(walletAddressFile, m_wallet->getAddress())) {
+		  logger(WARNING, BRIGHT_RED) << "Couldn't write wallet address file: " + walletAddressFile;
+	  }
   } else {
     m_wallet.reset(new WalletLegacy(m_currency, *m_node));
 
@@ -981,6 +1012,54 @@ bool simple_wallet::new_wallet(Crypto::SecretKey &secret_key, Crypto::SecretKey 
 }
 //----------------------------------------------------------------------------------------------------
 
+bool simple_wallet::new_wallet(AccountKeys &private_key, const std::string &wallet_file, const std::string& password) {
+	m_wallet_file = wallet_file;
+
+	m_wallet.reset(new WalletLegacy(m_currency, *m_node.get()));
+	m_node->addObserver(static_cast<INodeObserver*>(this));
+	m_wallet->addObserver(this);
+	try {
+		m_initResultPromise.reset(new std::promise<std::error_code>());
+		std::future<std::error_code> f_initError = m_initResultPromise->get_future();
+
+		m_wallet->initWithKeys(private_key, password);
+		auto initError = f_initError.get();
+		m_initResultPromise.reset(nullptr);
+		if (initError) {
+			fail_msg_writer() << "failed to generate new wallet: " << initError.message();
+			return false;
+		}
+
+		try {
+			CryptoNote::WalletHelper::storeWallet(*m_wallet, m_wallet_file);
+		}
+		catch (std::exception& e) {
+			fail_msg_writer() << "failed to save new wallet: " << e.what();
+			throw;
+		}
+
+		AccountKeys keys;
+		m_wallet->getAccountKeys(keys);
+
+		logger(INFO, BRIGHT_WHITE) <<
+			"Imported wallet: " << m_wallet->getAddress() << std::endl;
+	}
+	catch (const std::exception& e) {
+		fail_msg_writer() << "failed to import wallet: " << e.what();
+		return false;
+	}
+
+	success_msg_writer() <<
+		"**********************************************************************\n" <<
+		"Your wallet has been imported.\n" <<
+		"Use \"help\" command to see the list of available commands.\n" <<
+		"Always use \"exit\" command when closing simplewallet to save\n" <<
+		"current session's state. Otherwise, you will possibly need to synchronize \n" <<
+		"your wallet again. Your wallet key is NOT under risk anyway.\n" <<
+		"**********************************************************************";
+	return true;
+}
+//----------------------------------------------------------------------------------------------------
 bool simple_wallet::close_wallet()
 {
   try {
