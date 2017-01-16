@@ -90,6 +90,7 @@ namespace CryptoNote
     bool stop_mining(const std::vector<std::string> &args);
     bool show_balance(const std::vector<std::string> &args = std::vector<std::string>());
     bool export_keys(const std::vector<std::string> &args = std::vector<std::string>());
+    bool export_tracking_key(const std::vector<std::string> &args = std::vector<std::string>());
     bool show_incoming_transfers(const std::vector<std::string> &args);
     bool show_payments(const std::vector<std::string> &args);
     bool show_blockchain_height(const std::vector<std::string> &args);
@@ -99,7 +100,7 @@ namespace CryptoNote
     bool save(const std::vector<std::string> &args);
     bool reset(const std::vector<std::string> &args);
     bool set_log(const std::vector<std::string> &args);
-
+    
     bool ask_wallet_create_if_needed();
 
     void printConnectionError() const;
@@ -188,6 +189,7 @@ namespace CryptoNote
     refresh_progress_reporter_t m_refresh_progress_reporter;
 
     bool m_walletSynchronized;
+    bool m_trackingWallet;
     std::mutex m_walletSynchronizedMutex;
     std::condition_variable m_walletSynchronizedCV;
   };
