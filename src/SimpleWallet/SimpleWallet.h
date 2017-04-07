@@ -1,4 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers, The Karbovanets developers
+// Copyright (c) 2014-2016 XDN developers
+// Copyright (c) 2016-2017 The Karbowanec developers
 //
 // This file is part of Bytecoin.
 //
@@ -178,6 +180,7 @@ namespace CryptoNote
 	  std::string m_daemon_path;
 	  std::string m_mnemonic_seed;
 	  std::string m_wallet_file;
+	  std::string m_change_password;
 	  uint16_t m_daemon_port;
 	  Crypto::SecretKey m_recovery_key;  // recovery key (used as random for wallet gen)
 	  bool m_restore_deterministic_wallet;  // recover flag
@@ -190,6 +193,7 @@ namespace CryptoNote
     Logging::LoggerManager& logManager;
     System::Dispatcher& m_dispatcher;
     Logging::LoggerRef logger;
+    Tools::PasswordContainer pwd_container;
 
     std::unique_ptr<CryptoNote::NodeRpcProxy> m_node;
     std::unique_ptr<CryptoNote::IWalletLegacy> m_wallet;

@@ -657,13 +657,13 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm) {
   }
 
   if (m_generate_new.empty() && m_wallet_file_arg.empty()) {
-    std::cout << "Nor 'generate-new-wallet' neither 'wallet-file' argument was specified.\nWhat do you want to do?\n[O]pen existing wallet, [G]enerate new wallet file, [I]mport wallet, [R]estore Backup/Paperwallet, [T]rack tracking wallet or [E]xit.\n";
+    std::cout << "Nor 'generate-new-wallet' neither 'wallet-file' argument was specified.\nWhat do you want to do?\n[O]pen existing wallet, [C]hange its password, [G]enerate new wallet file, [I]mport wallet, [R]estore Backup/Paperwallet, [T]rack wallet or [E]xit.\n";
     char c;
     do {
       std::string answer;
       std::getline(std::cin, answer);
       c = answer[0];
-      if (!(c == 'O' || c == 'G' || c == 'E' || c == 'I' || c == 'R' || c == 'T' || c == 'o' || c == 'g' || c == 'e' || c == 'i' || c == 'r' || c == 't')) {
+      if (!(c == 'O' || c == 'G' || c == 'E' || c == 'I' || c == 'R' || c == 'T' || c == 'C' || c == 'o' || c == 'g' || c == 'e' || c == 'i' || c == 'r' || c == 't' || c == 'c' )) {
         std::cout << "Unknown command: " << c <<std::endl;
       } else {
         break;
@@ -691,12 +691,15 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm) {
       m_generate_new = userInput;
     } else if (c == 't' || c == 'T') {
       m_track_new = userInput;
-    } else {
+	} else if (c == 'c' || c == 'C') {
+	  m_change_password = userInput;
+	}
+	else {
       m_wallet_file_arg = userInput;
     }
   }
 
-  if (!m_generate_new.empty() && !m_wallet_file_arg.empty() && !m_import_new.empty() && !m_restore_new.empty() && !m_track_new.empty()) {
+  if (!m_generate_new.empty() && !m_wallet_file_arg.empty() && !m_import_new.empty() && !m_restore_new.empty() && !m_track_new.empty() && !m_change_password.empty()) {
     fail_msg_writer() << "you can't specify 'generate-new-wallet' and 'wallet-file' arguments simultaneously";
     return false;
   }
@@ -707,7 +710,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm) {
   }
 
   std::string walletFileName;
-  if (!m_generate_new.empty() || !m_import_new.empty() || !m_restore_new.empty() || !m_track_new.empty()) {
+  if (!m_generate_new.empty() || !m_import_new.empty() || !m_restore_new.empty() || !m_track_new.empty() || !m_change_password.empty()) {
     std::string ignoredString;
     if (!m_generate_new.empty()) {
       WalletHelper::prepareFileNames(m_generate_new, ignoredString, walletFileName);
@@ -717,7 +720,9 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm) {
       WalletHelper::prepareFileNames(m_restore_new, ignoredString, walletFileName);
     } else if (!m_track_new.empty()) {
       WalletHelper::prepareFileNames(m_track_new, ignoredString, walletFileName);
-    }
+	} else if (!m_change_password.empty()) {
+	  m_wallet_file_arg = m_change_password;
+  }
     boost::system::error_code ignore;
     if (boost::filesystem::exists(walletFileName, ignore)) {
       fail_msg_writer() << walletFileName << " already exists";
@@ -743,7 +748,6 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm) {
     m_daemon_address = std::string("http://") + m_daemon_host + ":" + std::to_string(m_daemon_port);
   }
 
-  Tools::PasswordContainer pwd_container;
   if (command_line::has_arg(vm, arg_password)) {
     pwd_container.password(command_line::get_arg(vm, arg_password));
   } else if (!pwd_container.read_password()) {
@@ -983,6 +987,10 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm) {
     if (keys.spendSecretKey == boost::value_initialized<Crypto::SecretKey>()) {
         m_trackingWallet = true;
         success_msg_writer() << "This is tracking wallet. Spending unavailable.\n";
+    }
+
+    if (!m_change_password.empty()) {
+      change_password();
     }
 
     success_msg_writer() <<
@@ -1366,11 +1374,13 @@ bool simple_wallet::change_password() {
   const auto newpwd = get_password();
   std::cout << "Repeat new ";
   const auto newpwd2 = get_password();
+
   if (newpwd != newpwd2) {
 	fail_msg_writer() << "Passwords doesn't match. Try again.";
 	change_password();
 	return false;
-  } 
+  }
+  
   try
 	{
 		m_wallet->changePassword(oldpwd, newpwd);
@@ -1380,6 +1390,7 @@ bool simple_wallet::change_password() {
 		return false;
 	}
 	success_msg_writer(true) << "Password changed.";
+
 	return true;
 }
 
@@ -1405,7 +1416,6 @@ bool simple_wallet::start_mining(const std::vector<std::string>& args) {
       "<number_of_threads> should be from 1 to " << max_mining_threads_count;
     return true;
   }
-
 
   COMMAND_RPC_START_MINING::response res;
 
