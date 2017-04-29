@@ -28,6 +28,12 @@
 
 #include <locale>
 
+#include <functional>
+#include <iostream>
+#include <cstring>
+#include <string>
+#include <map>
+
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
@@ -60,6 +66,16 @@
 #if defined(WIN32)
 #include <Windows.h>
 #include <crtdbg.h>
+#include <winsock2.h>
+#include <windns.h>
+#include <Rpc.h>
+# else 
+#include <arpa/nameser.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <resolv.h>
+#include <netdb.h>
 #endif
 
 
@@ -160,6 +176,7 @@ struct TransferCommand {
   std::vector<CryptoNote::WalletLegacyTransfer> dsts;
   std::vector<uint8_t> extra;
   uint64_t fee;
+  std::map<std::string, std::vector<WalletLegacyTransfer>> aliases;
 
   TransferCommand(const CryptoNote::Currency& currency) :
     m_currency(currency), fake_outs_count(0), fee(currency.minimumFee()) {
@@ -206,35 +223,42 @@ struct TransferCommand {
         } else {
           WalletLegacyTransfer destination;
           CryptoNote::TransactionDestinationEntry de;
+		  std::string aliasUrl;
 
           if (!m_currency.parseAccountAddressString(arg, de.addr)) {
             Crypto::Hash paymentId;
             if (CryptoNote::parsePaymentId(arg, paymentId)) {
               logger(ERROR, BRIGHT_RED) << "Invalid payment ID usage. Please, use -p <payment_id>. See help for details.";
             } else {
-              logger(ERROR, BRIGHT_RED) << "Wrong address: " << arg;
+			  // if string doesn't contain a dot, we won't consider it a url for now.
+			  if (strchr(arg.c_str(), '.') == NULL) {
+				logger(ERROR, BRIGHT_RED) << "Wrong address or alias: " << arg;
+				return false;
+			  }             
+			  aliasUrl = arg;
             }
-
-            return false;
           }
 
-          auto value = ar.next();
-          bool ok = m_currency.parseAmount(value, de.amount);
-          if (!ok || 0 == de.amount) {
-
+		  auto value = ar.next();
+		  bool ok = m_currency.parseAmount(value, de.amount);
+		  if (!ok || 0 == de.amount) {
 #if defined(WIN32)
 #undef max
 #undef min
-#endif
+#endif 
+			  logger(ERROR, BRIGHT_RED) << "amount is wrong: " << arg << ' ' << value <<
+				  ", expected number from 0 to " << m_currency.formatAmount(std::numeric_limits<uint64_t>::max());
+			  return false;
+		  }
 
-            logger(ERROR, BRIGHT_RED) << "amount is wrong: " << arg << ' ' << value <<
-              ", expected number from 0 to " << m_currency.formatAmount(std::numeric_limits<uint64_t>::max());
-            return false;
-          }
-          destination.address = arg;
-          destination.amount = de.amount;
-
-          dsts.push_back(destination);
+		  if (aliasUrl.empty()) {
+			  destination.address = arg;
+			  destination.amount = de.amount;
+			  dsts.push_back(destination);
+		  }
+		  else {
+			  aliases[aliasUrl].emplace_back(WalletLegacyTransfer{ "", static_cast<int64_t>(de.amount) });
+		  }
           
           if (!remote_fee_address.empty()) {
             destination.address = remote_fee_address;
@@ -245,7 +269,7 @@ struct TransferCommand {
         }
       }
 
-      if (dsts.empty()) {
+	  if (dsts.empty() && aliases.empty()) {
         logger(ERROR, BRIGHT_RED) << "At least one destination address is required";
         return false;
       }
@@ -460,6 +484,57 @@ bool writeAddressFile(const std::string& addressFilename, const std::string& add
   return true;
 }
 
+bool processServerAliasResponse(const std::string& s, std::string& address) {
+	try {
+
+		// Courtesy of Monero Project
+		// make sure the txt record has "oa1:krb" and find it
+		auto pos = s.find("oa1:krb");
+		if (pos == std::string::npos)
+			return false;
+		// search from there to find "recipient_address="
+		pos = s.find("recipient_address=", pos);
+		if (pos == std::string::npos)
+			return false;
+		pos += 18; // move past "recipient_address="
+		// find the next semicolon
+		auto pos2 = s.find(";", pos);
+		if (pos2 != std::string::npos)
+		{
+			// length of address == 95, we can at least validate that much here
+			if (pos2 - pos == 95)
+			{
+				address = s.substr(pos, 95);
+			} else {
+				return false;
+			}
+		}
+	}
+	catch (std::exception&) {
+		return false;
+	}
+
+	return true;
+}
+
+bool askAliasesTransfersConfirmation(const std::map<std::string, std::vector<WalletLegacyTransfer>>& aliases, const Currency& currency) {
+	std::cout << "Would you like to send money to the following addresses?" << std::endl;
+
+	for (const auto& kv : aliases) {
+		for (const auto& transfer : kv.second) {
+			std::cout << transfer.address << " " << std::setw(21) << currency.formatAmount(transfer.amount) << "  " << kv.first << std::endl;
+		}
+	}
+
+	std::string answer;
+	do {
+		std::cout << "y/n: ";
+		std::getline(std::cin, answer);
+	} while (answer != "y" && answer != "Y" && answer != "n" && answer != "N");
+
+	return answer == "y" || answer == "Y";
+}
+
 bool processServerFeeAddressResponse(const std::string& response, std::string& fee_address) {
     try {
         std::stringstream stream(response);
@@ -547,6 +622,7 @@ simple_wallet::simple_wallet(System::Dispatcher& dispatcher, const CryptoNote::C
   m_consoleHandler.setHandler("save", boost::bind(&simple_wallet::save, this, _1), "Save wallet synchronized data");
   m_consoleHandler.setHandler("reset", boost::bind(&simple_wallet::reset, this, _1), "Discard cache data and start synchronizing from the start");
   m_consoleHandler.setHandler("show_seed", boost::bind(&simple_wallet::seed, this, _1), "Get wallet recovery phrase (deterministic seed)");
+  //m_consoleHandler.setHandler("password", boost::bind(&simple_wallet::change_password, this, _1), "Ecrypt wallet with password or change wallet password");
   m_consoleHandler.setHandler("help", boost::bind(&simple_wallet::help, this, _1), "Show this help");
   m_consoleHandler.setHandler("exit", boost::bind(&simple_wallet::exit, this, _1), "Close wallet");
 }
@@ -1276,6 +1352,37 @@ bool simple_wallet::reset(const std::vector<std::string> &args) {
   return true;
 }
 
+std::string simple_wallet::get_password() {
+	pwd_container.read_password();
+	return pwd_container.password();
+}
+
+bool simple_wallet::change_password() {
+  std::cout << std::endl;
+  //std::cout << "Old ";
+  //const auto oldpwd = get_password();
+  const auto oldpwd = pwd_container.password();
+  std::cout << "New ";
+  const auto newpwd = get_password();
+  std::cout << "Repeat new ";
+  const auto newpwd2 = get_password();
+  if (newpwd != newpwd2) {
+	fail_msg_writer() << "Passwords doesn't match. Try again.";
+	change_password();
+	return false;
+  } 
+  try
+	{
+		m_wallet->changePassword(oldpwd, newpwd);
+	}
+	catch (const std::exception& e) {
+		fail_msg_writer() << e.what();
+		return false;
+	}
+	success_msg_writer(true) << "Password changed.";
+	return true;
+}
+
 bool simple_wallet::start_mining(const std::vector<std::string>& args) {
   COMMAND_RPC_START_MINING::request req;
   req.miner_address = m_wallet->getAddress();
@@ -1530,6 +1637,105 @@ bool simple_wallet::show_blockchain_height(const std::vector<std::string>& args)
   return true;
 }
 //----------------------------------------------------------------------------------------------------
+std::string simple_wallet::resolveAlias(const std::string& aliasUrl) {
+	std::string host;
+	std::string uri;
+	std::string record;
+	std::string address;
+
+	// DNS Lookup
+	if (!fetch_dns_txt(aliasUrl, record)) {
+		throw std::runtime_error("Failed to lookup DNS record");
+	}
+
+	if (!processServerAliasResponse(record, address)) {
+		throw std::runtime_error("Failed to parse server response");
+	}
+	
+	return address;
+}
+
+bool simple_wallet::fetch_dns_txt(const std::string domain, std::string &record) {
+
+#ifdef WIN32
+	using namespace std;
+
+#pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "Dnsapi.lib")
+
+	PDNS_RECORD pDnsRecord;          //Pointer to DNS_RECORD structure.
+
+	{
+		WORD type = DNS_TYPE_TEXT;
+
+		if (DnsQuery_A(domain.c_str(), type, DNS_QUERY_BYPASS_CACHE, NULL, &pDnsRecord, NULL)) {
+			cerr << "Error querying: '" << domain << "'" << endl;
+			return 2;
+		}
+	}
+
+	PDNS_RECORD it;
+	map<WORD, function<void(void)>> callbacks;
+	
+	callbacks[DNS_TYPE_TEXT] = [&it,&record](void) -> void {
+		std::stringstream stream;
+		for (DWORD i = 0; i < it->Data.TXT.dwStringCount; i++) {
+			stream << RPC_CSTR(it->Data.TXT.pStringArray[i]) << endl;;
+		}
+		record = stream.str();
+	};
+
+	for (it = pDnsRecord; it != NULL; it = it->pNext) {
+		if (callbacks.count(it->wType)) {
+			callbacks[it->wType]();
+		}
+	}
+	DnsRecordListFree(pDnsRecord, DnsFreeRecordListDeep);
+# else
+	using namespace std;
+
+	res_init();
+	ns_msg nsMsg;
+	int response;
+	unsigned char query_buffer[1024];
+	{
+		ns_type type = ns_t_txt;
+
+		const char * c_domain = (domain).c_str();
+		response = res_query(c_domain, C_IN, type, query_buffer, sizeof(query_buffer));
+
+		if (response < 0) {
+			return 1;
+		}
+	}
+
+	ns_initparse(query_buffer, response, &nsMsg);
+
+	map<ns_type, function<void(const ns_rr &rr)>> callbacks;
+
+	callbacks[ns_t_txt] = [&nsMsg,&record](const ns_rr &rr) -> void {
+		std::stringstream stream;
+		stream << ns_rr_rdata(rr) + 1 << endl;
+		record = stream.str();
+	};
+
+	for (int x = 0; x < ns_msg_count(nsMsg, ns_s_an); x++) {
+		ns_rr rr;
+		ns_parserr(&nsMsg, ns_s_an, x, &rr);
+		ns_type type = ns_rr_type(rr);
+		if (callbacks.count(type)) {
+			callbacks[type](rr);
+		}
+	}
+
+#endif
+	if (record.empty())
+		return false;
+
+	return true;
+}
+
+//----------------------------------------------------------------------------------------------------
 std::string simple_wallet::getFeeAddress() {
   
   HttpClient httpClient(m_dispatcher, m_daemon_host, m_daemon_port);
@@ -1560,8 +1766,42 @@ bool simple_wallet::transfer(const std::vector<std::string> &args) {
   try {
     TransferCommand cmd(m_currency);
 
-    if (!cmd.parseArguments(logger, args))
-      return false;
+	if (!cmd.parseArguments(logger, args))
+		return true;
+
+	for (auto& kv : cmd.aliases) {
+		std::string address;
+
+		try {
+			address = resolveAlias(kv.first);
+
+			AccountPublicAddress ignore;
+			if (!m_currency.parseAccountAddressString(address, ignore)) {
+				throw std::runtime_error("Address \"" + address + "\" is invalid");
+			}
+		}
+		catch (std::exception& e) {
+			fail_msg_writer() << "Couldn't resolve alias: " << e.what() << ", alias: " << kv.first;
+			return true;
+		}
+
+		for (auto& transfer : kv.second) {
+			transfer.address = address;
+		}
+	}
+
+	if (!cmd.aliases.empty()) {
+		if (!askAliasesTransfersConfirmation(cmd.aliases, m_currency)) {
+			return true;
+		}
+
+		for (auto& kv : cmd.aliases) {
+			std::copy(std::move_iterator<std::vector<WalletLegacyTransfer>::iterator>(kv.second.begin()),
+				std::move_iterator<std::vector<WalletLegacyTransfer>::iterator>(kv.second.end()),
+				std::back_inserter(cmd.dsts));
+		}
+	}
+
     CryptoNote::WalletHelper::SendCompleteResultObserver sent;
 
     std::string extraString;
