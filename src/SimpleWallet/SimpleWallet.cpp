@@ -622,7 +622,6 @@ simple_wallet::simple_wallet(System::Dispatcher& dispatcher, const CryptoNote::C
   m_consoleHandler.setHandler("save", boost::bind(&simple_wallet::save, this, _1), "Save wallet synchronized data");
   m_consoleHandler.setHandler("reset", boost::bind(&simple_wallet::reset, this, _1), "Discard cache data and start synchronizing from the start");
   m_consoleHandler.setHandler("show_seed", boost::bind(&simple_wallet::seed, this, _1), "Get wallet recovery phrase (deterministic seed)");
-  //m_consoleHandler.setHandler("password", boost::bind(&simple_wallet::change_password, this, _1), "Ecrypt wallet with password or change wallet password");
   m_consoleHandler.setHandler("help", boost::bind(&simple_wallet::help, this, _1), "Show this help");
   m_consoleHandler.setHandler("exit", boost::bind(&simple_wallet::exit, this, _1), "Close wallet");
 }
@@ -657,13 +656,20 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm) {
   }
 
   if (m_generate_new.empty() && m_wallet_file_arg.empty()) {
-    std::cout << "Nor 'generate-new-wallet' neither 'wallet-file' argument was specified.\nWhat do you want to do?\n[O]pen existing wallet, [C]hange its password, [G]enerate new wallet file, [I]mport wallet, [R]estore Backup/Paperwallet, [T]rack wallet or [E]xit.\n";
+    std::cout << "Nor 'generate-new-wallet' neither 'wallet-file' argument was specified.\nWhat do you want to do?\n";
+	std::cout << "O - open wallet\n";
+	std::cout << "G - generate new wallet\n";
+	std::cout << "P - change password\n";
+	std::cout << "I - import wallet from keys\n";
+	std::cout << "R - restore backup/paperwallet\n";
+	std::cout << "T - import tracking wallet\n";
+	std::cout << "E - exit\n";
     char c;
     do {
       std::string answer;
       std::getline(std::cin, answer);
       c = answer[0];
-      if (!(c == 'O' || c == 'G' || c == 'E' || c == 'I' || c == 'R' || c == 'T' || c == 'C' || c == 'o' || c == 'g' || c == 'e' || c == 'i' || c == 'r' || c == 't' || c == 'c' )) {
+      if (!(c == 'O' || c == 'G' || c == 'E' || c == 'I' || c == 'R' || c == 'T' || c == 'P' || c == 'o' || c == 'g' || c == 'e' || c == 'i' || c == 'r' || c == 't' || c == 'p' )) {
         std::cout << "Unknown command: " << c <<std::endl;
       } else {
         break;
@@ -676,12 +682,31 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm) {
 
     std::cout << "Specify wallet file name (e.g., wallet.bin).\n";
     std::string userInput;
+	bool validInput = true;
     do {
       std::cout << "Wallet file name: ";
       std::getline(std::cin, userInput);
       boost::algorithm::trim(userInput);
-    } while (userInput.empty());
+    
+	  if (c != 'o' && c != 'O')
+	  {
+		  std::string ignoredString;
+		  std::string walletFileName;
 
+		  WalletHelper::prepareFileNames(userInput, ignoredString, walletFileName);
+		  boost::system::error_code ignore;
+		  if (boost::filesystem::exists(walletFileName, ignore))
+		  {
+			  std::cout << walletFileName << " already exists! Try a different name." << std::endl;
+			  validInput = false;
+		  }
+		  else
+		  {
+			  validInput = true;
+		  }
+	  }
+
+	} while (!validInput);
 
     if (c == 'i' || c == 'I') {
       m_import_new = userInput;
@@ -691,7 +716,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm) {
       m_generate_new = userInput;
     } else if (c == 't' || c == 'T') {
       m_track_new = userInput;
-	} else if (c == 'c' || c == 'C') {
+	} else if (c == 'p' || c == 'P') {
 	  m_change_password = userInput;
 	}
 	else {
