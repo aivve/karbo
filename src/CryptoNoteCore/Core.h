@@ -160,6 +160,8 @@ private:
   std::error_code validateMixin(const Transaction& transaction, uint32_t blockIndex);
   std::error_code validateFee(const Transaction& transaction, uint32_t blockIndex);
 
+  bool check_tx_inputs_keyimages_diff(const Transaction& tx);
+
   uint32_t findBlockchainSupplement(const std::vector<Crypto::Hash>& remoteBlockIds) const;
   std::vector<Crypto::Hash> getBlockHashes(uint32_t startBlockIndex, uint32_t maxCount) const;
 
