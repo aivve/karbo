@@ -52,6 +52,8 @@ struct EllipticCurveScalar {
 
     static void generate_keys(PublicKey &, SecretKey &);
     friend void generate_keys(PublicKey &, SecretKey &);
+	static void generate_deterministic_keys(PublicKey &pub, SecretKey &sec, SecretKey& second = SecretKey());
+	friend void generate_deterministic_keys(PublicKey &pub, SecretKey &sec, SecretKey& second);
     static bool check_key(const PublicKey &);
     friend bool check_key(const PublicKey &);
     static bool secret_key_to_public_key(const SecretKey &, PublicKey &);
@@ -137,6 +139,10 @@ struct EllipticCurveScalar {
    */
   inline void generate_keys(PublicKey &pub, SecretKey &sec) {
     crypto_ops::generate_keys(pub, sec);
+  }
+
+  inline void generate_deterministic_keys(PublicKey &pub, SecretKey &sec, SecretKey& second) {
+    crypto_ops::generate_deterministic_keys(pub, sec, second);
   }
 
   /* Check a public key. Returns true if it is valid, false otherwise.

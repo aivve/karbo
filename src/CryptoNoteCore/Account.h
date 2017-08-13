@@ -31,6 +31,7 @@ namespace CryptoNote {
   public:
     AccountBase();
     void generate();
+	void generateDeterministic();
 
     const AccountKeys& getAccountKeys() const;
     void setAccountKeys(const AccountKeys& keys);
