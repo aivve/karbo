@@ -52,7 +52,7 @@ struct EllipticCurveScalar {
 
     static void generate_keys(PublicKey &, SecretKey &);
     friend void generate_keys(PublicKey &, SecretKey &);
-	static void generate_deterministic_keys(PublicKey &pub, SecretKey &sec, SecretKey& second = SecretKey());
+	static void generate_deterministic_keys(PublicKey &pub, SecretKey &sec, SecretKey& second);
 	friend void generate_deterministic_keys(PublicKey &pub, SecretKey &sec, SecretKey& second);
     static bool check_key(const PublicKey &);
     friend bool check_key(const PublicKey &);

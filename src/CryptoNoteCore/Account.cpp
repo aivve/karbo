@@ -17,10 +17,10 @@
 
 #include "Account.h"
 #include "CryptoNoteSerialization.h"
-#include "Crypto/crypto.h"
+#include "crypto/crypto.h"
 extern "C"
 {
-#include "Crypto/keccak.h"
+#include "crypto/keccak.h"
 }
 
 namespace CryptoNote {
