@@ -531,38 +531,15 @@ Difficulty Currency::nextDifficulty(uint8_t version, uint32_t blockIndex, std::v
     return 0;
   }
 
-  if (version >= 4 && m_zawyDifficultyV4) {
-    if (high != 0) {
-      return 0;
-    }
-    uint64_t nextDiffZ = low / timeSpan;
-    if (nextDiffZ <= 100000) {
-      nextDiffZ = 100000;
-    }
-
-    return nextDiffZ;
+  uint8_t c_zawyDifficultyBlockVersion = m_zawyDifficultyBlockVersion;
+  if (m_zawyDifficultyV2) {
+    c_zawyDifficultyBlockVersion = 2;
   }
-
-  if (version >= 3 && m_zawyDifficultyV3) {
+  if (version >= c_zawyDifficultyBlockVersion && c_zawyDifficultyBlockVersion) {
     if (high != 0) {
       return 0;
     }
     uint64_t nextDiffZ = low / timeSpan;
-    if (nextDiffZ <= 100000) {
-      nextDiffZ = 100000;
-    }
-
-    return nextDiffZ;
-  }
-
-  if (version >= 2 && m_zawyDifficultyV2) {
-    if (high != 0) {
-      return 0;
-    }
-    uint64_t nextDiffZ = low / timeSpan;
-    if (nextDiffZ <= 100000) {
-      nextDiffZ = 100000;
-    }
 
     return nextDiffZ;
   }
@@ -618,9 +595,6 @@ DIFFICULTY_WINDOW=17
       return 0;
     }
     uint64_t nextDiffZ = low / timeSpan;
-    if (nextDiffZ <= 100000) {
-      nextDiffZ = 100000;
-    }
 
     return nextDiffZ;
   }
@@ -748,8 +722,7 @@ m_tailEmissionReward(currency.m_tailEmissionReward),
 m_cryptonoteCoinVersion(currency.m_cryptonoteCoinVersion),
 m_zawyDifficultyBlockIndex(currency.m_zawyDifficultyBlockIndex),
 m_zawyDifficultyV2(currency.m_zawyDifficultyV2),
-m_zawyDifficultyV3(currency.m_zawyDifficultyV3),
-m_zawyDifficultyV4(currency.m_zawyDifficultyV4),
+m_zawyDifficultyBlockVersion(currency.m_zawyDifficultyBlockVersion),
 m_testnet(currency.m_testnet),
 genesisBlockTemplate(std::move(currency.genesisBlockTemplate)),
 cachedGenesisBlock(new CachedBlock(genesisBlockTemplate)),
@@ -774,8 +747,7 @@ cryptonoteCoinVersion(parameters::CRYPTONOTE_COIN_VERSION);
 tailEmissionReward(parameters::TAIL_EMISSION_REWARD);
 zawyDifficultyBlockIndex(parameters::ZAWY_DIFFICULTY_BLOCK_INDEX);
 zawyDifficultyV2(parameters::ZAWY_DIFFICULTY_V2);
-zawyDifficultyV3(parameters::ZAWY_DIFFICULTY_V3);
-zawyDifficultyV4(parameters::ZAWY_DIFFICULTY_V4);
+zawyDifficultyBlockVersion(parameters::ZAWY_DIFFICULTY_DIFFICULTY_BLOCK_VERSION);
   blockGrantedFullRewardZone(parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE);
   minerTxBlobReservedSize(parameters::CRYPTONOTE_COINBASE_BLOB_RESERVED_SIZE);
 

@@ -39,8 +39,7 @@ const uint64_t TAIL_EMISSION_REWARD                          = 1000000000000;
 const size_t CRYPTONOTE_COIN_VERSION                          = 1;
 const uint32_t ZAWY_DIFFICULTY_BLOCK_INDEX                 = 0;
 const size_t ZAWY_DIFFICULTY_V2                          = 1;
-const size_t ZAWY_DIFFICULTY_V3                          = 0;
-const size_t ZAWY_DIFFICULTY_V4                          = 0;
+const uint8_t ZAWY_DIFFICULTY_DIFFICULTY_BLOCK_VERSION   = 0;
 const unsigned EMISSION_SPEED_FACTOR                         = 18;
 static_assert(EMISSION_SPEED_FACTOR <= 8 * sizeof(uint64_t), "Bad EMISSION_SPEED_FACTOR");
 
