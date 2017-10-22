@@ -304,6 +304,22 @@ struct COMMAND_RPC_STOP_DAEMON {
   typedef STATUS_STRUCT response;
 };
 
+//-----------------------------------------------
+struct COMMAND_RPC_GET_PEER_LIST {
+	typedef EMPTY_STRUCT request;
+
+	struct response {
+		std::vector<std::string> peers;
+		std::string status;
+
+		void serialize(ISerializer &s) {
+			KV_MEMBER(peers)
+			KV_MEMBER(status)
+		}
+	};
+};
+
+//-----------------------------------------------
 struct COMMAND_RPC_GET_FEE_ADDRESS {
   typedef EMPTY_STRUCT request;
 
