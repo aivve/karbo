@@ -100,6 +100,7 @@ const command_line::arg_descriptor<std::string> arg_mnemonic_seed = { "mnemonic-
 const command_line::arg_descriptor<bool> arg_restore_deterministic_wallet = { "restore-deterministic-wallet", "Recover wallet using electrum-style mnemonic", false };
 const command_line::arg_descriptor<bool> arg_non_deterministic = { "non-deterministic", "Creates non-deterministic (classic) view and spend keys", false };
 const command_line::arg_descriptor<uint16_t> arg_daemon_port = { "daemon-port", "Use daemon instance at port <arg> instead of 32348", 0 };
+const command_line::arg_descriptor<std::string> arg_log_file = {"log-file", "", ""};
 const command_line::arg_descriptor<uint32_t> arg_log_level = { "set_log", "", INFO, true };
 const command_line::arg_descriptor<bool> arg_testnet = { "testnet", "Used to deploy test nets. The daemon must be launched with --testnet flag", false };
 const command_line::arg_descriptor< std::vector<std::string> > arg_command = { "command", "" };
@@ -1936,6 +1937,7 @@ int main(int argc, char* argv[]) {
   command_line::add_arg(desc_params, arg_daemon_host);
   command_line::add_arg(desc_params, arg_daemon_port);
   command_line::add_arg(desc_params, arg_command);
+  command_line::add_arg(desc_params, arg_log_file);
   command_line::add_arg(desc_params, arg_log_level);
   command_line::add_arg(desc_params, arg_testnet);
   Tools::wallet_rpc_server::init_options(desc_params);
@@ -1976,6 +1978,17 @@ int main(int argc, char* argv[]) {
 
   if (!r)
     return 1;
+  
+  auto modulePath = Common::NativePathToGeneric(argv[0]);
+  auto cfgLogFile = Common::NativePathToGeneric(command_line::get_arg(vm, arg_log_file));
+
+  if (cfgLogFile.empty()) {
+    cfgLogFile = Common::ReplaceExtenstion(modulePath, ".log");
+    } else {
+    if (!Common::HasParentPath(cfgLogFile)) {
+      cfgLogFile = Common::CombinePath(Common::GetPathDirectory(modulePath), cfgLogFile);
+    }
+  }
 
   //set up logging options
   Level logLevel = DEBUGGING;
@@ -1984,7 +1997,7 @@ int main(int argc, char* argv[]) {
     logLevel = static_cast<Level>(command_line::get_arg(vm, arg_log_level));
   }
 
-  logManager.configure(buildLoggerConfiguration(logLevel, Common::ReplaceExtenstion(argv[0], ".log")));
+  logManager.configure(buildLoggerConfiguration(logLevel, cfgLogFile));
 
   logger(INFO, BRIGHT_WHITE) << CRYPTONOTE_NAME << " wallet v" << PROJECT_VERSION_LONG;
 
