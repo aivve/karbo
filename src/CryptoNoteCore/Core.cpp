@@ -2348,6 +2348,41 @@ std::vector<Crypto::Hash> Core::getTransactionHashesByPaymentId(const Hash& paym
   return hashes;
 }
 
+bool Core::getTransactionsByPaymentId(const Crypto::Hash& paymentId, std::vector<Transaction>& transactions) {
+  auto blockchainTransactionHashes = getTransactionHashesByPaymentId(paymentId);
+  auto poolTransactionHashes = transactionPool->getTransactionHashesByPaymentId(paymentId);
+
+  std::vector<CachedTransaction> cachedTransactions;
+  std::vector<Crypto::Hash> missedTransactions;
+  std::vector<BinaryArray> rawTransactions;
+  std::vector<Transaction> transactions;
+
+  if (!poolTransactionHashes.empty()) {
+    blockchainTransactionHashes.insert(blockchainTransactionHashes.end(), poolTransactionHashes.begin(), poolTransactionHashes.end());
+  }
+
+  if (blockchainTransactionHashes.empty()) {
+    return false;
+  }
+
+  getTransactions(blockchainTransactionHashes, rawTransactions, missedTransactions);
+  if (missedTransactions.size() > 0) {
+    return false;
+  }
+
+	uint64_t cumulativeSize;
+
+	if (!extractTransactions(rawTransactions,  cachedTransactions, cumulativeSize)) {
+		return false;
+	}
+
+	for (const auto& CachedTransaction : cachedTransactions) {
+		transactions.emplace_back(CachedTransaction.getTransaction());
+	}
+
+	return true;
+}
+
 void Core::throwIfNotInitialized() const {
   if (!initialized) {
     throw std::system_error(make_error_code(error::CoreErrorCode::NOT_INITIALIZED));
