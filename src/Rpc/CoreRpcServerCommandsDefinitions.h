@@ -841,6 +841,26 @@ struct COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASHES {
   };
 };
 
+struct COMMAND_RPC_BLOCK_BY_HEIGHT {
+  struct request {
+    uint64_t height;
+
+    void serialize(ISerializer &s) {
+      KV_MEMBER(height)
+    }
+  };
+
+  struct response {
+    BlockDetails block;
+    std::string status;
+
+    void serialize(ISerializer& s) {
+      KV_MEMBER(status)
+        KV_MEMBER(block)
+    }
+  };
+};
+
 struct COMMAND_RPC_GEN_PAYMENT_ID {
   typedef EMPTY_STRUCT request;
   

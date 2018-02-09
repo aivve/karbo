@@ -194,6 +194,7 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
       { "getlastblockheader", { makeMemberMethod(&RpcServer::on_get_last_block_header), false } },
       { "getblockheaderbyhash", { makeMemberMethod(&RpcServer::on_get_block_header_by_hash), false } },
       { "getblockheaderbyheight", { makeMemberMethod(&RpcServer::on_get_block_header_by_height), false } },
+      { "get_block_by_height", { makeMemberMethod(&RpcServer::on_get_block_by_height), false } },
       { "getblockcount", { makeMemberMethod(&RpcServer::on_getblockcount), true } },
       { "f_blocks_list_json", { makeMemberMethod(&RpcServer::f_on_blocks_list_json), false } },
       { "f_block_json", { makeMemberMethod(&RpcServer::f_on_block_json), false } },
@@ -1166,6 +1167,23 @@ bool RpcServer::on_validate_address(const COMMAND_RPC_VALIDATE_ADDRESS::request&
     res.viewPublicKey = Common::podToHex(acc.viewPublicKey);
   }
   res.status = CORE_RPC_STATUS_OK;
+  return true;
+}
+
+bool RpcServer::on_get_block_by_height(const COMMAND_RPC_BLOCK_BY_HEIGHT::request& req, COMMAND_RPC_BLOCK_BY_HEIGHT::response& res) {
+  if (m_core.getTopBlockIndex() < req.height) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_TOO_BIG_HEIGHT,
+      std::string("Invalid height: ") + std::to_string(req.height) + ", current blockchain height = " + std::to_string(m_core.getTopBlockIndex()) };
+  }
+
+  uint32_t index = static_cast<uint32_t>(req.height);
+  auto block = m_core.getBlockByIndex(index);
+  CachedBlock cachedBlock(block);
+  assert(cachedBlock.getBlockIndex() == req.height);
+
+  res.block = m_core.getBlockDetails(cachedBlock.getBlockHash());
+  res.status = CORE_RPC_STATUS_OK;
+
   return true;
 }
 
