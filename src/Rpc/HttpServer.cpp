@@ -95,11 +95,11 @@ namespace CryptoNote {
 				m_connections.erase(&connection);
 			};
 
+			workingContextGroup.spawn(std::bind(&HttpServer::acceptLoop, this));
+
 			auto addr = connection.getPeerAddressAndPort();
 
 			logger(DEBUGGING) << "Incoming connection from " << addr.first.toDottedDecimal() << ":" << addr.second;
-
-			workingContextGroup.spawn(std::bind(&HttpServer::acceptLoop, this));
 
 			System::TcpStreambuf streambuf(connection);
 			std::iostream stream(&streambuf);
