@@ -1,4 +1,6 @@
-// Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2016, The Forknote developers
+// Copyright (c) 2016-2018, The Karbowanec developers
 //
 // This file is part of Bytecoin.
 //
@@ -129,6 +131,7 @@ std::unordered_map<std::string, RpcServer::RpcHandler<RpcServer::HandlerFunction
 
   { "/feeaddress", { jsonMethod<COMMAND_RPC_GET_FEE_ADDRESS>(&RpcServer::on_get_fee_address), true } },
   { "/peers", { jsonMethod<COMMAND_RPC_GET_PEER_LIST>(&RpcServer::on_get_peer_list), true } },
+  { "/paymentid", { jsonMethod<COMMAND_RPC_GEN_PAYMENT_ID>(&RpcServer::on_get_payment_id), true } },
   
   // disabled in restricted rpc mode
   { "/stop_daemon", { jsonMethod<COMMAND_RPC_STOP_DAEMON>(&RpcServer::on_stop_daemon), true } },
@@ -194,8 +197,7 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
       { "f_blocks_list_json", { makeMemberMethod(&RpcServer::f_on_blocks_list_json), false } },
       { "f_block_json", { makeMemberMethod(&RpcServer::f_on_block_json), false } },
       { "f_transaction_json", { makeMemberMethod(&RpcServer::f_on_transaction_json), false } },
-      { "f_on_transactions_pool_json", { makeMemberMethod(&RpcServer::f_on_transactions_pool_json), false } },
-      { "f_on_pool_json", { makeMemberMethod(&RpcServer::f_on_transactions_pool_json), false } },
+      { "f_mempool_json", { makeMemberMethod(&RpcServer::f_on_transactions_pool_json), false } },
       { "k_transactions_by_payment_id", { makeMemberMethod(&RpcServer::onTransactionsByPaymentId), false } }
     };
 
@@ -573,6 +575,17 @@ bool RpcServer::on_get_peer_list(const COMMAND_RPC_GET_PEER_LIST::request& req, 
 	}
 	res.status = CORE_RPC_STATUS_OK;
 	return true;
+}
+
+bool RpcServer::on_get_payment_id(const COMMAND_RPC_GEN_PAYMENT_ID::request& req, COMMAND_RPC_GEN_PAYMENT_ID::response& res) {
+  std::string pid;
+  try {
+    pid = Common::podToHex(Crypto::rand<Crypto::Hash>());
+  } catch (const std::exception& e) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't generate Payment ID" };
+  }
+  res.payment_id = pid;
+  return true;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------
