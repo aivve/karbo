@@ -200,11 +200,11 @@ using CryptoNote::ISerializer;
 	{
 		struct request
 		{
-			size_t transaction_number;
+			std::string tx_hash;
 
 			void serialize(ISerializer& s)
 			{
-				KV_MEMBER(transaction_number)
+				KV_MEMBER(tx_hash)
 			}
 		};
 		struct response
