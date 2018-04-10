@@ -630,6 +630,15 @@ bool simple_wallet::help(const std::vector<std::string> &args/* = std::vector<st
 
 bool simple_wallet::seed(const std::vector<std::string> &args/* = std::vector<std::string>()*/) {
   std::string electrum_words;
+
+  m_consoleHandler.pause();
+  if (!pwd_container.read_and_validate()) {
+    std::cout << "Incorrect password!" << std::endl;
+    m_consoleHandler.unpause();
+    return false;
+  }
+  m_consoleHandler.unpause();
+
   bool success = m_wallet->getSeed(electrum_words);
 
   if (success)
@@ -1947,6 +1956,15 @@ bool simple_wallet::transfer(const std::vector<std::string> &args) {
     fail_msg_writer() << "This is tracking wallet. Spending is impossible.";
     return true;
   }
+
+  m_consoleHandler.pause();
+  if (!pwd_container.read_and_validate()) {
+    std::cout << "Incorrect password!" << std::endl;
+    m_consoleHandler.unpause();
+    return false;
+  }
+  m_consoleHandler.unpause();
+
   try {
     TransferCommand cmd(m_currency, *m_node);
 
