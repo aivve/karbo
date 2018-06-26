@@ -232,7 +232,7 @@ bool RpcServer::enableCors(const std::vector<std::string> domains) {
   return true;
 }
 
-bool RpcServer::setFeeAddress(const std::string fee_address) {
+bool RpcServer::setFeeAddress(const std::string& fee_address) {
   m_fee_address = fee_address;
   return true;
 }

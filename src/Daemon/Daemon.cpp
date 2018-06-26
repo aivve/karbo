@@ -68,7 +68,7 @@ namespace
   const command_line::arg_descriptor<std::string> arg_log_file    = {"log-file", "", ""};
   const command_line::arg_descriptor<int>         arg_log_level   = {"log-level", "", 2}; // info level
   const command_line::arg_descriptor<bool>        arg_console     = {"no-console", "Disable daemon console commands"};
-
+  const command_line::arg_descriptor<bool>        arg_restricted_rpc = { "restricted-rpc", "Disable some of the RPC methods to prevent abuse" };
   const command_line::arg_descriptor<std::string> arg_set_fee_address = { "fee-address", "Sets fee address for light wallets to the daemon's RPC responses.", "" };
   const command_line::arg_descriptor<bool>        arg_print_genesis_tx = { "print-genesis-tx", "Prints genesis' block tx hex to insert it to config and exits" };
   const command_line::arg_descriptor<std::vector<std::string>>        arg_enable_cors = { "enable-cors", "Adds header 'Access-Control-Allow-Origin' to the daemon's RPC responses. Uses the value as domain. Use * for all" };
@@ -130,6 +130,7 @@ int main(int argc, char* argv[])
     command_line::add_arg(desc_cmd_sett, arg_log_file);
     command_line::add_arg(desc_cmd_sett, arg_log_level);
     command_line::add_arg(desc_cmd_sett, arg_console);
+    command_line::add_arg(desc_cmd_sett, arg_restricted_rpc);
     command_line::add_arg(desc_cmd_sett, arg_set_fee_address);
     command_line::add_arg(desc_cmd_sett, arg_testnet_on);
     command_line::add_arg(desc_cmd_sett, arg_enable_cors);
@@ -319,9 +320,17 @@ int main(int argc, char* argv[])
     logger(INFO) << "Starting core rpc server on address " << rpcConfig.getBindAddress();
     rpcServer.start(rpcConfig.bindIp, rpcConfig.bindPort);
 
-    rpcServer.setFeeAddress(command_line::get_arg(vm, arg_set_fee_address));
+    rpcServer.restrictRPC(command_line::get_arg(vm, arg_restricted_rpc));
     rpcServer.enableCors(command_line::get_arg(vm, arg_enable_cors));
-
+    if (command_line::has_arg(vm, arg_set_fee_address)) {
+      AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
+      std::string addr_str = command_line::get_arg(vm, arg_set_fee_address);
+      if (!currency.parseAccountAddressString(addr_str, acc)) {
+        logger(ERROR, BRIGHT_RED) << "Bad fee address: " << addr_str;
+        return 1;
+      }
+      rpcServer.setFeeAddress(addr_str);
+    }
     logger(INFO) << "Core rpc server started ok";
 
     Tools::SignalHandler::install([&dch, &p2psrv] {
