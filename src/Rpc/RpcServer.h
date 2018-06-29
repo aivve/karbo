@@ -41,8 +41,10 @@ public:
 
   typedef std::function<bool(RpcServer*, const HttpRequest& request, HttpResponse& response)> HandlerFunction;
   bool restrictRPC(const bool is_resctricted);
-  bool setFeeAddress(const std::string& fee_address);
   bool enableCors(const std::vector<std::string> domains);
+  bool setFeeAddress(const std::string& fee_address, const AccountPublicAddress& fee_acc);
+  bool setViewKey(const std::string& view_key);
+  bool masternode_check_incoming_tx(const BinaryArray& tx_blob);
 
 private:
 
@@ -109,6 +111,8 @@ private:
   ICryptoNoteProtocolHandler& m_protocol;
 
   std::string m_fee_address;
+  AccountPublicAddress m_fee_acc;
+  Crypto::SecretKey m_view_key = NULL_SECRET_KEY;
   bool m_restricted_rpc;
   std::vector<std::string> m_cors_domains;
 
