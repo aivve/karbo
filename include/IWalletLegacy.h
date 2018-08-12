@@ -59,6 +59,7 @@ struct WalletLegacyTransaction {
   uint64_t         sentTime;
   uint64_t         unlockTime;
   Crypto::Hash     hash;
+  Crypto::SecretKey secretKey;
   bool             isCoinbase;
   uint32_t         blockHeight;
   uint64_t         timestamp;
@@ -129,6 +130,10 @@ public:
 
   virtual void getAccountKeys(AccountKeys& keys) = 0;
   virtual bool getSeed(std::string& electrum_words) = 0;
+
+  virtual Crypto::SecretKey getTxKey(Crypto::Hash& txid) = 0;
+  virtual bool getTxProof(Crypto::Hash& txid, CryptoNote::AccountPublicAddress& address, std::string& tx_key, std::string& sig_str) = 0;
+  virtual bool checkTxProof(Crypto::Hash& txid, CryptoNote::AccountPublicAddress& address, std::string& sig_str) = 0;
 
   virtual std::string sign(const std::string &data) = 0;
   virtual bool verify(const std::string &data, const CryptoNote::AccountPublicAddress &address, const std::string &signature) = 0;

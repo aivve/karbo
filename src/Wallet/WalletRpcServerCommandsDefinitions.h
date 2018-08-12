@@ -295,54 +295,78 @@ using CryptoNote::ISerializer;
 		};
 	};
 
-	struct COMMAND_RPC_SIGN
-	{
-		struct request
-		{
-			std::string data;
- 
-			void serialize(ISerializer& s)
-			{
-				KV_MEMBER(data);
-			}
-		};
+  /* Commands: sign / verify */
+  struct COMMAND_RPC_SIGN
+  {
+    struct request
+    {
+      std::string data;
 
-		struct response
-		{
-			std::string signature;
+      void serialize(ISerializer& s)
+      {
+        KV_MEMBER(data)
+      }
+    };
 
-			void serialize(ISerializer& s)
-			{
-				KV_MEMBER(signature);
-			}
-		};
-	};
+    struct response
+    {
+      std::string signature;
 
-	struct COMMAND_RPC_VERIFY
-	{
-		struct request
-		{
-			std::string data;
-			std::string address;
-			std::string signature;
+      void serialize(ISerializer& s)
+      {
+        KV_MEMBER(signature)
+      }
+    };
+  };
 
-			void serialize(ISerializer& s)
-			{
-				KV_MEMBER(data);
-				KV_MEMBER(address);
-				KV_MEMBER(signature);
-			}
-		};
+  struct COMMAND_RPC_VERIFY
+  {
+    struct request
+    {
+      std::string data;
+      std::string address;
+      std::string signature;
 
-		struct response
-		{
-			bool good;
- 
-			void serialize(ISerializer& s)
-			{
-				KV_MEMBER(good);
-			}
-		};
-	};
+      void serialize(ISerializer& s)
+      {
+        KV_MEMBER(data)
+        KV_MEMBER(address)
+        KV_MEMBER(signature)
+      }
+    };
+
+    struct response
+    {
+      bool good;
+
+      void serialize(ISerializer& s)
+      {
+        KV_MEMBER(good)
+      }
+    };
+  };
+
+	/* Command: get_tx_key */
+  struct COMMAND_RPC_GET_TX_KEY
+  {
+    struct request
+    {
+      std::string tx_hash;
+
+      void serialize(ISerializer& s)
+      {
+        KV_MEMBER(tx_hash)
+      }
+    };
+    struct response
+    {
+      std::string tx_key;
+
+      void serialize(ISerializer& s)
+      {
+        KV_MEMBER(tx_key)
+      }
+    };
+  };
 
 }} //Tools::wallet_rpc
