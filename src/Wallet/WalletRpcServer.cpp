@@ -351,6 +351,7 @@ namespace Tools {
 
       Crypto::Hash paymentId;
       transfer.paymentId = (getPaymentIdFromTxExtra(extraVec, paymentId) && paymentId != NULL_HASH ? Common::podToHex(paymentId) : "");
+      transfer.txKey = (txInfo.secretKey != NULL_SECRET_KEY ? Common::podToHex(txInfo.secretKey) : "");
 
       res.transfers.push_back(transfer);
     }
@@ -406,6 +407,7 @@ namespace Tools {
 
         Crypto::Hash paymentId;
         transfer.paymentId = (getPaymentIdFromTxExtra(extraVec, paymentId) && paymentId != NULL_HASH ? Common::podToHex(paymentId) : "");
+        transfer.txKey = (txInfo.secretKey != NULL_SECRET_KEY ? Common::podToHex(txInfo.secretKey) : "");
 
         res.transaction_details = transfer;
 
