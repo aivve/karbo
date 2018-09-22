@@ -494,6 +494,7 @@ struct f_transaction_details_response {
   uint64_t mixin;
   uint64_t fee;
   uint64_t amount_out;
+  uint32_t confirmations = 0;
 
   void serialize(ISerializer &s) {
     KV_MEMBER(hash)
@@ -502,6 +503,7 @@ struct f_transaction_details_response {
     KV_MEMBER(mixin)
     KV_MEMBER(fee)
     KV_MEMBER(amount_out)
+    KV_MEMBER(confirmations)
   }
 };
 
