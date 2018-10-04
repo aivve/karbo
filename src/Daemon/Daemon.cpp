@@ -75,6 +75,7 @@ namespace
   const command_line::arg_descriptor<bool>        arg_testnet_on  = {"testnet", "Used to deploy test nets. Checkpoints and hardcoded seeds are ignored, "
     "network id is changed. Use it with --data-dir flag. The wallet must be launched with --testnet flag.", false};
   const command_line::arg_descriptor<std::string> arg_load_checkpoints = { "load-checkpoints", "<filename> Load checkpoints from csv file.", "" };
+  const command_line::arg_descriptor<bool>        arg_disable_checkpoints = { "without-checkpoints", "Synchronize without checkpoints" };
 }
 
 bool command_line_preprocessor(const boost::program_options::variables_map& vm, LoggerRef& logger);
@@ -134,6 +135,7 @@ int main(int argc, char* argv[])
     command_line::add_arg(desc_cmd_sett, arg_enable_cors);
     command_line::add_arg(desc_cmd_sett, arg_print_genesis_tx);
     command_line::add_arg(desc_cmd_sett, arg_load_checkpoints);
+    command_line::add_arg(desc_cmd_sett, arg_disable_checkpoints);
 
     RpcServerConfig::initOptions(desc_cmd_sett);
     NetNodeConfig::initOptions(desc_cmd_sett);
@@ -225,13 +227,20 @@ int main(int argc, char* argv[])
 
     CryptoNote::Checkpoints checkpoints(logManager);
 
+    bool disable_checkpoints = command_line::get_arg(vm, arg_disable_checkpoints);
+    if (!disable_checkpoints && !testnet_mode) {
+      CryptoNote::Checkpoints checkpoints(logManager);
+      for (const auto& cp : CryptoNote::CHECKPOINTS) {
+        checkpoints.addCheckpoint(cp.index, cp.blockId);
+      }
+
 #ifndef __ANDROID__
-	checkpoints.loadCheckpointsFromDns();
+      checkpoints.loadCheckpointsFromDns();
 #endif
+    }
 
-	bool use_checkpoints = !command_line::get_arg(vm, arg_load_checkpoints).empty();
-
-	if (use_checkpoints && !testnet_mode) {
+    bool manual_checkpoints = !command_line::get_arg(vm, arg_load_checkpoints).empty();
+    if (manual_checkpoints && !testnet_mode) {
       logger(INFO) << "Loading checkpoints from file...";
       std::string checkpoints_file = command_line::get_arg(vm, arg_load_checkpoints);
       bool results = checkpoints.loadCheckpointsFromFile(checkpoints_file);
@@ -240,12 +249,6 @@ int main(int argc, char* argv[])
       }
     }
 
-    if (!testnet_mode) {
-      for (const auto& cp : CryptoNote::CHECKPOINTS) {
-        checkpoints.addCheckpoint(cp.index, cp.blockId);
-      }
-    }
-    
     NetNodeConfig netNodeConfig;
     netNodeConfig.init(vm);
     netNodeConfig.setTestnet(testnet_mode);
