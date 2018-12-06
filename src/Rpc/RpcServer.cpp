@@ -252,6 +252,11 @@ bool RpcServer::setViewKey(const std::string& view_key) {
   return true;
 }
 
+bool RpcServer::setContactInfo(const std::string& contact) {
+  m_contact_info = contact;
+  return true;
+}
+
 bool RpcServer::isCoreReady() {
   return m_core.getCurrency().isTestnet() || m_p2p.get_payload_object().isSynchronized();
 }
@@ -503,8 +508,11 @@ bool RpcServer::on_get_info(const COMMAND_RPC_GET_INFO::request& req, COMMAND_RP
   res.white_peerlist_size = m_p2p.getPeerlistManager().get_white_peers_count();
   res.grey_peerlist_size = m_p2p.getPeerlistManager().get_gray_peers_count();
   res.last_known_block_index = std::max(static_cast<uint32_t>(1), m_protocol.getObservedHeight() - 1);
+  Crypto::Hash last_block_hash = m_core.getTopBlockHash();
+  res.top_block_hash = Common::podToHex(last_block_hash);
   res.version = PROJECT_VERSION_LONG;
   res.fee_address = m_fee_address.empty() ? std::string() : m_fee_address;
+  res.contact = m_contact_info.empty() ? std::string() : m_contact_info;
   res.start_time = (uint64_t)m_core.getStartTime();
   res.already_generated_coins = m_core.getCurrency().formatAmount(m_core.getTotalGeneratedAmount()); // that large uint64_t number is unsafe in JavaScript environment and therefore as a JSON value so we display it as a formatted string
   res.block_major_version = m_core.getBlockMajorVersionForHeight(m_core.getTopBlockIndex());
