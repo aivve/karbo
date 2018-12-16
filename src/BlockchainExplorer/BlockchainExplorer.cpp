@@ -146,7 +146,7 @@ private:
   bool m_cancelled;
 };
 
-BlockchainExplorer::BlockchainExplorer(INode& node, Logging::ILogger& logger) :
+BlockchainExplorer::BlockchainExplorer(INode& node, Logging::ILogger& logger, IDataBase &database) :
   node(node), 
   logger(logger, "BlockchainExplorer"),
   database(database),
@@ -562,7 +562,7 @@ void BlockchainExplorer::poolChanged() {
               }
             }
 
-            for (const std::pair<Crypto::Hash, TransactionRemoveReason> kv : *removedTransactionsHashesPtr) {
+            for (const std::pair<Crypto::Hash, TransactionRemoveReason> &kv : *removedTransactionsHashesPtr) {
               auto iter = knownPoolState.find(kv.first);
               if (iter != knownPoolState.end()) {
                 knownPoolState.erase(iter);
