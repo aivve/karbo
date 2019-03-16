@@ -124,7 +124,7 @@ std::error_code PaymentServiceJsonRpcServer::handleCreateAddress(const CreateAdd
 }
 
 std::error_code PaymentServiceJsonRpcServer::handleCreateAddressList(const CreateAddressList::Request& request, CreateAddressList::Response& response) {
-  return service.createAddressList(request.spendSecretKeys, response.addresses);
+  return service.createAddressList(request.spendSecretKeys, request.reset, response.addresses);
 }
 
 std::error_code PaymentServiceJsonRpcServer::handleDeleteAddress(const DeleteAddress::Request& request, DeleteAddress::Response& response) {
