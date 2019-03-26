@@ -1284,7 +1284,7 @@ std::string print_peerlist_to_string(const std::list<PeerlistEntry>& pl) {
   }
 
   void NodeServer::acceptLoop() {
-    for (;;) {
+    while (!m_stop) {
       try {
         P2pConnectionContext ctx(m_dispatcher, logger.getLogger(), m_listener.accept());
         ctx.m_connection_id = boost::uuids::random_generator()();
@@ -1338,7 +1338,7 @@ std::string print_peerlist_to_string(const std::list<PeerlistEntry>& pl) {
         for (auto& kv : m_connections) {
           auto& ctx = kv.second;
           if (ctx.writeDuration(now) > P2P_DEFAULT_INVOKE_TIMEOUT) {
-            logger(WARNING) << ctx << "write operation timed out, stopping connection";
+            logger(DEBUGGING) << ctx << "write operation timed out, stopping connection";
             safeInterrupt(ctx);
           }
         }
