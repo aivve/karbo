@@ -971,7 +971,7 @@ bool Core::isTransactionValidForPool(const CachedTransaction& cachedTransaction,
   uint64_t fee;
 
   if (auto validationResult = validateTransaction(cachedTransaction, validatorState, chainsLeaves[0], fee, getTopBlockIndex())) {
-    logger(Logging::WARNING) << "Transaction " << cachedTransaction.getTransactionHash()
+    logger(Logging::DEBUGGING) << "Transaction " << cachedTransaction.getTransactionHash()
       << " is not valid. Reason: " << validationResult.message();
     return false;
   }
@@ -1388,11 +1388,12 @@ bool Core::getMixin(const Transaction& transaction, uint64_t& mixin) {
   return true;
 }
 
+// Note that the mixin calculated here is by 1 more than the mixin users input in transaction.
 std::error_code Core::validateMixin(const Transaction& transaction, uint32_t blockIndex) {
   uint64_t mixin = 0;
   getMixin(transaction, mixin);
   if ((blockIndex > currency.upgradeHeightV4() && mixin > currency.maxMixin()) ||
-      (blockIndex > currency.upgradeHeightV4() && mixin < currency.minMixin())) {
+      (blockIndex > currency.upgradeHeightV4() && mixin < currency.minMixin() && mixin != 1)) {
     return error::TransactionValidationError::INVALID_MIXIN;
   }
   return error::TransactionValidationError::VALIDATION_SUCCESS;
