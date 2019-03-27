@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2016 XDN developers
 //
 // This file is part of Bytecoin.
 //
@@ -27,6 +28,7 @@ namespace CryptoNote {
   public:
     enum HTTP_STATUS {
       STATUS_200,
+      STATUS_401,
       STATUS_404,
       STATUS_500
     };

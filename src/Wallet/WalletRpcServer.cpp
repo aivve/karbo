@@ -36,10 +36,14 @@ namespace Tools {
 
 const command_line::arg_descriptor<uint16_t> wallet_rpc_server::arg_rpc_bind_port = { "rpc-bind-port", "Starts wallet as rpc server for wallet operations, sets bind port for server", 0, true };
 const command_line::arg_descriptor<std::string> wallet_rpc_server::arg_rpc_bind_ip = { "rpc-bind-ip", "Specify ip to bind rpc server", "127.0.0.1" };
+const command_line::arg_descriptor<std::string> wallet_rpc_server::arg_rpc_user = { "rpc-user", "Username to use the rpc server. If authorization is not required, leave it empty", "" };
+const command_line::arg_descriptor<std::string> wallet_rpc_server::arg_rpc_password = { "rpc-password", "Password to use the rpc server. If authorization is not required, leave it empty", "" };
 
 void wallet_rpc_server::init_options(boost::program_options::options_description& desc) {
   command_line::add_arg(desc, arg_rpc_bind_ip);
   command_line::add_arg(desc, arg_rpc_bind_port);
+  command_line::add_arg(desc, arg_rpc_user);
+  command_line::add_arg(desc, arg_rpc_password);
 }
 //------------------------------------------------------------------------------------------------------------------------------
 wallet_rpc_server::wallet_rpc_server(
@@ -61,7 +65,7 @@ wallet_rpc_server::wallet_rpc_server(
 }
 //------------------------------------------------------------------------------------------------------------------------------
 bool wallet_rpc_server::run() {
-  start(m_bind_ip, m_port);
+  start(m_bind_ip, m_port, m_rpcUser, m_rpcPassword);
   m_stopComplete.wait();
   return true;
 }
@@ -78,6 +82,8 @@ void wallet_rpc_server::send_stop_signal() {
 bool wallet_rpc_server::handle_command_line(const boost::program_options::variables_map& vm) {
   m_bind_ip = command_line::get_arg(vm, arg_rpc_bind_ip);
   m_port = command_line::get_arg(vm, arg_rpc_bind_port);
+  m_rpcUser = command_line::get_arg(vm, arg_rpc_user);
+  m_rpcPassword = command_line::get_arg(vm, arg_rpc_password);
   return true;
 }
 //------------------------------------------------------------------------------------------------------------------------------
@@ -284,6 +290,28 @@ bool wallet_rpc_server::on_get_transfers(const wallet_rpc::COMMAND_RPC_GET_TRANS
 
 bool wallet_rpc_server::on_get_height(const wallet_rpc::COMMAND_RPC_GET_HEIGHT::request& req, wallet_rpc::COMMAND_RPC_GET_HEIGHT::response& res) {
   res.height = m_node.getLastLocalBlockHeight();
+  return true;
+}
+
+bool wallet_rpc_server::on_get_address(const wallet_rpc::COMMAND_RPC_GET_ADDRESS::request& req, wallet_rpc::COMMAND_RPC_GET_ADDRESS::response& res) {
+  res.address = m_wallet.getAddress();
+  return true;
+}
+
+bool wallet_rpc_server::on_query_key(const wallet_rpc::COMMAND_RPC_QUERY_KEY::request& req, wallet_rpc::COMMAND_RPC_QUERY_KEY::response& res) {
+  if (req.key_type.compare("mnemonic") == 0) {
+    if (!m_wallet.getSeed(res.key))
+    {
+      throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_UNKNOWN_ERROR, std::string("The wallet is non-deterministic. Cannot display seed."));
+      return false;
+    }
+  }
+  else
+  {
+    throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_UNKNOWN_ERROR, std::string("key_type ") + req.key_type + std::string(" not found"));
+    return false;
+  }
+
   return true;
 }
 
