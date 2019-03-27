@@ -1277,7 +1277,6 @@ std::error_code Core::validateTransaction(const CachedTransaction& cachedTransac
   }
 
   auto error = validateSemantic(transaction, fee, blockIndex);
-
   if (error != error::TransactionValidationError::VALIDATION_SUCCESS) {
     return error;
   }
@@ -1394,6 +1393,7 @@ std::error_code Core::validateMixin(const Transaction& transaction, uint32_t blo
       (blockIndex > currency.upgradeHeightV4() && mixin < currency.minMixin())) {
     return error::TransactionValidationError::INVALID_MIXIN;
   }
+  return error::TransactionValidationError::VALIDATION_SUCCESS;
 }
 
 std::error_code Core::validateSemantic(const Transaction& transaction, uint64_t& fee, uint32_t blockIndex) {
