@@ -4,7 +4,6 @@ set(UPNPC_BUILD_TESTS OFF CACHE BOOL "Build test executables")
 set(WITH_MD_LIBRARY OFF CACHE BOOL "Code Generation for static library")
 
 add_subdirectory(miniupnpc)
-
 if (DO_TESTS)
   add_subdirectory(gtest)
 endif()
