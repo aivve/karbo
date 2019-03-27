@@ -36,9 +36,9 @@ public:
   RpcServer(System::Dispatcher& dispatcher, Logging::ILogger& log, Core& c, NodeServer& p2p, ICryptoNoteProtocolHandler& protocol);
 
   typedef std::function<bool(RpcServer*, const HttpRequest& request, HttpResponse& response)> HandlerFunction;
-
+  bool restrictRPC(const bool is_resctricted);
   bool setFeeAddress(const std::string fee_address);
-  bool enableCors(const std::vector<std::string>  domains);
+  bool enableCors(const std::vector<std::string> domains);
 
 private:
 
@@ -103,6 +103,7 @@ private:
   ICryptoNoteProtocolHandler& m_protocol;
 
   std::string m_fee_address;
+  bool m_restricted_rpc;
   std::vector<std::string> m_cors_domains;
 
 };

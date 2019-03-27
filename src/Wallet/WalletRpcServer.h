@@ -53,6 +53,8 @@ namespace Tools
 
     static const command_line::arg_descriptor<uint16_t> arg_rpc_bind_port;
     static const command_line::arg_descriptor<std::string> arg_rpc_bind_ip;
+	static const command_line::arg_descriptor<std::string> arg_rpc_user;
+	static const command_line::arg_descriptor<std::string> arg_rpc_password;
 
   private:
 

@@ -165,7 +165,6 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
 
   using namespace JsonRpc;
 
-
   for (const auto& cors_domain: m_cors_domains) {
     response.addHeader("Access-Control-Allow-Origin", cors_domain);
   }
@@ -218,6 +217,10 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
   return true;
 }
 
+bool RpcServer::restrictRPC(const bool is_restricted) {
+  m_restricted_rpc = is_restricted;
+  return true;
+}
 
 bool RpcServer::enableCors(const std::vector<std::string> domains) {
   m_cors_domains = domains;
@@ -533,6 +536,10 @@ bool RpcServer::on_get_fee_address(const COMMAND_RPC_GET_FEE_ADDRESS::request& r
 
 
 bool RpcServer::on_stop_daemon(const COMMAND_RPC_STOP_DAEMON::request& req, COMMAND_RPC_STOP_DAEMON::response& res) {
+  if (m_restricted_rpc) {
+    res.status = "Failed, restricted handle";
+    return false;
+  }
   if (m_core.getCurrency().isTestnet()) {
     m_p2p.sendStopSignal();
     res.status = CORE_RPC_STATUS_OK;
