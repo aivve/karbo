@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
+f// Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
 //
 // This file is part of Bytecoin.
 //
@@ -99,7 +99,7 @@ using CryptoNote::ISerializer;
     std::string tx_hash;
     uint64_t amount;
     uint64_t block_height;
-    uint64_t unlock_time;
+	uint64_t unlock_time = 0;
 
     void serialize(ISerializer& s) {
       KV_MEMBER(tx_hash)
