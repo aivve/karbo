@@ -99,7 +99,7 @@ using CryptoNote::ISerializer;
     std::string tx_hash;
     uint64_t amount;
     uint64_t block_height;
-	uint64_t unlock_time = 0;
+	uint64_t unlock_time;
 
     void serialize(ISerializer& s) {
       KV_MEMBER(tx_hash)
