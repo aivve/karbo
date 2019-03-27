@@ -1509,7 +1509,7 @@ std::error_code Core::validateBlock(const CachedBlock& cachedBlock, IBlockchainC
     return error::BlockValidationError::WRONG_VERSION;
   }
 
-  if (block.majorVersion >= BLOCK_MAJOR_VERSION_2) {
+  if (block.majorVersion == BLOCK_MAJOR_VERSION_2 || block.majorVersion == BLOCK_MAJOR_VERSION_3) {
     if (block.majorVersion == BLOCK_MAJOR_VERSION_2 && block.parentBlock.majorVersion > BLOCK_MAJOR_VERSION_1) {
       logger(Logging::ERROR, Logging::BRIGHT_RED) << "Parent block of block " << cachedBlock.getBlockHash() << " has wrong major version: "
                                 << static_cast<int>(block.parentBlock.majorVersion) << ", at index " << cachedBlock.getBlockIndex()
@@ -1526,7 +1526,7 @@ std::error_code Core::validateBlock(const CachedBlock& cachedBlock, IBlockchainC
     return error::BlockValidationError::TIMESTAMP_TOO_FAR_IN_FUTURE;
   }
 
-  auto timestamps = cache->getLastTimestamps(currency.timestampCheckWindow(), previousBlockIndex, addGenesisBlock);
+  auto timestamps = cache->getLastTimestamps(currency.timestampCheckWindow(block.majorVersion), previousBlockIndex, addGenesisBlock);
   if (timestamps.size() >= currency.timestampCheckWindow(block.majorVersion)) {
     auto median_ts = Common::medianValue(timestamps);
     if (block.timestamp < median_ts) {
