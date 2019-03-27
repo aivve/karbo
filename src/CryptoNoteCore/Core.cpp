@@ -211,6 +211,8 @@ Core::Core(const Currency& currency, Logging::ILogger& logger, Checkpoints&& che
 
   upgradeManager->addMajorBlockVersion(BLOCK_MAJOR_VERSION_2, currency.upgradeHeight(BLOCK_MAJOR_VERSION_2));
   upgradeManager->addMajorBlockVersion(BLOCK_MAJOR_VERSION_3, currency.upgradeHeight(BLOCK_MAJOR_VERSION_3));
+  upgradeManager->addMajorBlockVersion(BLOCK_MAJOR_VERSION_4, currency.upgradeHeight(BLOCK_MAJOR_VERSION_4));
+  upgradeManager->addMajorBlockVersion(BLOCK_MAJOR_VERSION_5, currency.upgradeHeight(BLOCK_MAJOR_VERSION_5));
 
   transactionPool = std::unique_ptr<ITransactionPoolCleanWrapper>(new TransactionPoolCleanWrapper(
     std::unique_ptr<ITransactionPool>(new TransactionPool(logger)),
@@ -1277,7 +1279,6 @@ std::error_code Core::validateTransaction(const CachedTransaction& cachedTransac
   }
 
   auto error = validateSemantic(transaction, fee, blockIndex);
-
   if (error != error::TransactionValidationError::VALIDATION_SUCCESS) {
     return error;
   }
@@ -1394,6 +1395,7 @@ std::error_code Core::validateMixin(const Transaction& transaction, uint32_t blo
       (blockIndex > currency.upgradeHeightV4() && mixin < currency.minMixin())) {
     return error::TransactionValidationError::INVALID_MIXIN;
   }
+  return error::TransactionValidationError::VALIDATION_SUCCESS;
 }
 
 std::error_code Core::validateSemantic(const Transaction& transaction, uint64_t& fee, uint32_t blockIndex) {
@@ -1509,7 +1511,7 @@ std::error_code Core::validateBlock(const CachedBlock& cachedBlock, IBlockchainC
     return error::BlockValidationError::WRONG_VERSION;
   }
 
-  if (block.majorVersion >= BLOCK_MAJOR_VERSION_2) {
+  if (block.majorVersion == BLOCK_MAJOR_VERSION_2 || block.majorVersion == BLOCK_MAJOR_VERSION_3) {
     if (block.majorVersion == BLOCK_MAJOR_VERSION_2 && block.parentBlock.majorVersion > BLOCK_MAJOR_VERSION_1) {
       logger(Logging::ERROR, Logging::BRIGHT_RED) << "Parent block of block " << cachedBlock.getBlockHash() << " has wrong major version: "
                                 << static_cast<int>(block.parentBlock.majorVersion) << ", at index " << cachedBlock.getBlockIndex()
@@ -1526,7 +1528,7 @@ std::error_code Core::validateBlock(const CachedBlock& cachedBlock, IBlockchainC
     return error::BlockValidationError::TIMESTAMP_TOO_FAR_IN_FUTURE;
   }
 
-  auto timestamps = cache->getLastTimestamps(currency.timestampCheckWindow(), previousBlockIndex, addGenesisBlock);
+  auto timestamps = cache->getLastTimestamps(currency.timestampCheckWindow(block.majorVersion), previousBlockIndex, addGenesisBlock);
   if (timestamps.size() >= currency.timestampCheckWindow(block.majorVersion)) {
     auto median_ts = Common::medianValue(timestamps);
     if (block.timestamp < median_ts) {
