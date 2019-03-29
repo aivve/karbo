@@ -66,8 +66,8 @@ using CryptoNote::ISerializer;
 		struct request
 		{
 			std::list<transfer_destination> destinations;
-			uint64_t fee;
-			uint64_t mixin;
+			uint64_t fee = 0;
+			uint64_t mixin = 0;
 			uint64_t unlock_time = 0;
 			std::string payment_id;
 
