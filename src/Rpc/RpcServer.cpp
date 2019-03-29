@@ -16,6 +16,7 @@
 // along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "RpcServer.h"
+#include "version.h"
 
 #include <future>
 #include <unordered_map>
@@ -460,6 +461,13 @@ bool RpcServer::on_get_info(const COMMAND_RPC_GET_INFO::request& req, COMMAND_RP
   res.white_peerlist_size = m_p2p.getPeerlistManager().get_white_peers_count();
   res.grey_peerlist_size = m_p2p.getPeerlistManager().get_gray_peers_count();
   res.last_known_block_index = std::max(static_cast<uint32_t>(1), m_protocol.getObservedHeight()) - 1;
+  res.version = PROJECT_VERSION_LONG;
+  if (m_fee_address.empty()) {
+    res.fee_address = "";
+  }
+  else {
+    res.fee_address = m_fee_address;
+  }
   res.status = CORE_RPC_STATUS_OK;
   return true;
 }
