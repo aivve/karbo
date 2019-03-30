@@ -175,3 +175,4 @@ bool Checkpoints::loadCheckpointsFromDns()
   return true;
 }
 #endif
+}
