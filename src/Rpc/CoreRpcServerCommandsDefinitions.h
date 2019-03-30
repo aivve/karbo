@@ -457,6 +457,22 @@ struct f_transaction_short_response {
   }
 };
 
+struct transaction_pool_response {
+  std::string hash;
+  uint64_t fee;
+  uint64_t amount_out;
+  uint64_t size;
+  uint64_t receiveTime;
+
+  void serialize(ISerializer &s) {
+    KV_MEMBER(hash)
+    KV_MEMBER(fee)
+    KV_MEMBER(amount_out)
+    KV_MEMBER(size)
+    KV_MEMBER(receiveTime)
+  }
+};
+
 struct f_transaction_details_response {
   std::string hash;
   size_t size;
@@ -662,6 +678,20 @@ struct F_COMMAND_RPC_GET_POOL {
 
   struct response {
     std::vector<f_transaction_short_response> transactions; //transactions blobs as hex
+    std::string status;
+
+    void serialize(ISerializer &s) {
+      KV_MEMBER(transactions)
+      KV_MEMBER(status)
+    }
+  };
+};
+
+struct F_COMMAND_RPC_GET_MEMPOOL {
+  typedef EMPTY_STRUCT request;
+
+  struct response {
+    std::vector<transaction_pool_response> transactions; //transactions blobs as hex
     std::string status;
 
     void serialize(ISerializer &s) {
