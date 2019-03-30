@@ -156,6 +156,7 @@ bool Checkpoints::loadCheckpointsFromFile(const std::string& fileName) {
 	return true;
 }
 //---------------------------------------------------------------------------
+#ifndef __ANDROID__
 bool Checkpoints::loadCheckpointsFromDns()
 {
   std::string domain("checkpoints.karbo.org");
@@ -190,4 +191,4 @@ bool Checkpoints::loadCheckpointsFromDns()
 
   return true;
 }
-
+#endif
