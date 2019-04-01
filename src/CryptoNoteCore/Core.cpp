@@ -1020,6 +1020,16 @@ void Core::notifyOnSuccess(error::AddBlockErrorCode opResult, uint32_t previousB
   }
 }
 
+bool Core::handleBlockFound(BlockTemplate& b) {
+  auto add_result = submitBlock(toBinaryArray(b));
+  if (add_result != error::AddBlockErrorCode::ADDED_TO_MAIN &&
+      add_result != error::AddBlockErrorCode::ADDED_TO_ALTERNATIVE && 
+      add_result != error::AddBlockErrorCode::ADDED_TO_ALTERNATIVE_AND_SWITCHED) {
+    return false;
+  }
+  return true;
+}
+
 std::error_code Core::addBlock(RawBlock&& rawBlock) {
   throwIfNotInitialized();
 

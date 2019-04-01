@@ -111,8 +111,8 @@ namespace CryptoNote
       extra_nonce = m_extra_messages[m_config.current_extra_message_index];
     }
 
-    if(!m_handler.get_block_template(bl, m_mine_address, di, height, extra_nonce)) {
-      logger(ERROR) << "Failed to get_block_template(), stopping mining";
+    if(!m_handler.getBlockTemplate(bl, m_mine_address, di, height, extra_nonce)) {
+      logger(ERROR) << "Failed to getBlockTemplate(), stopping mining";
       return false;
     }
 
@@ -424,7 +424,7 @@ namespace CryptoNote
 
         logger(INFO, GREEN) << "Found block for difficulty: " << local_diff;
 
-        if(!m_handler.handle_block_found(b)) {
+        if(!m_handler.handleBlockFound(b)) {
           --m_config.current_extra_message_index;
         } else {
           //success update, lets update config
