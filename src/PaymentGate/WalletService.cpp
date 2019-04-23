@@ -48,6 +48,8 @@
 #include "WalletServiceErrorCategory.h"
 #include "ITransfersContainer.h"
 
+#include "Mnemonics/electrum-words.cpp"
+
 using namespace CryptoNote;
 
 namespace PaymentService {
