@@ -21,13 +21,14 @@
 
 #include <future>
 
+#include "CheckpointsData.h"
 #include "Common/SignalHandler.h"
+#include "Common/ScopeExit.h"
 #include "Common/Util.h"
 #include "InProcessNode/InProcessNode.h"
 #include "Logging/LoggerRef.h"
 #include "PaymentGate/PaymentServiceJsonRpcServer.h"
-
-#include "Common/ScopeExit.h"
+#include "CryptoNoteCore/CoreConfig.h"
 #include "CryptoNoteCore/Core.h"
 #include "CryptoNoteCore/DatabaseBlockchainCache.h"
 #include "CryptoNoteCore/DatabaseBlockchainCacheFactory.h"
