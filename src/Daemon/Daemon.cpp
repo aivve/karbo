@@ -41,8 +41,10 @@
 #include "CryptoNoteCore/MainChainStorage.h"
 #include "CryptoNoteCore/MainChainStorageRocksdb.h"
 #include "CryptoNoteCore/MainChainStorageSqlite.h"
+#include "CryptoNoteCore/MainChainStorageLmdb.h"
 #include "CryptoNoteCore/MinerConfig.h"
-#include "CryptoNoteCore/RocksDBWrapper.h"
+//#include "CryptoNoteCore/RocksDBWrapper.h"
+#include "CryptoNoteCore/LmDBWrapper.h"
 #include "CryptoNoteProtocol/CryptoNoteProtocolHandler.h"
 #include "P2p/NetNode.h"
 #include "P2p/NetNodeConfig.h"
@@ -84,6 +86,7 @@ namespace
   const command_line::arg_descriptor<std::string>              arg_rollback            = { "rollback", "Rollback blockchain to <height>" };
   const command_line::arg_descriptor<bool>                     arg_sqlite_cache        = { "sqlite-cache", "Use SQLite3 for local cache files" };
   const command_line::arg_descriptor<bool>                     arg_rocksdb_cache       = { "rocksdb-cache", "Use Rocksdb for local cache files" };
+  const command_line::arg_descriptor<bool>                     arg_lmdb_cache          = { "lmdb-cache", "Use LMDB for local cache files" };
 }
 
 bool command_line_preprocessor(const boost::program_options::variables_map& vm, LoggerRef& logger);
@@ -149,6 +152,7 @@ int main(int argc, char* argv[])
     command_line::add_arg(desc_cmd_sett, arg_rollback);
     command_line::add_arg(desc_cmd_sett, arg_sqlite_cache);
     command_line::add_arg(desc_cmd_sett, arg_rocksdb_cache);
+    command_line::add_arg(desc_cmd_sett, arg_lmdb_cache);
     command_line::add_arg(desc_cmd_sett, arg_set_contact);
 
     RpcServerConfig::initOptions(desc_cmd_sett);
@@ -298,7 +302,8 @@ int main(int argc, char* argv[])
       }
     }
 
-    RocksDBWrapper database(logManager);
+    //RocksDBWrapper database(logManager);
+    LmDBWrapper database(logManager);
     database.init(dbConfig);
     Tools::ScopeExit dbShutdownOnExit([&database] () { database.shutdown(); });
 
@@ -321,6 +326,9 @@ int main(int argc, char* argv[])
     }
     else if (command_line::has_arg(vm, arg_rocksdb_cache)) {
       mainChainStorage = createSwappedMainChainStorageRocksdb(data_dir_path.string(), currency);
+    }
+    else if (command_line::has_arg(vm, arg_lmdb_cache)) {
+      mainChainStorage = createSwappedMainChainStorageLmdb(data_dir_path.string(), currency);
     }
     else {
       mainChainStorage = createSwappedMainChainStorage(data_dir_path.string(), currency);

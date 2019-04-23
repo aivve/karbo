@@ -18,6 +18,8 @@ set(CMAKE_SUPPRESS_REGENERATION ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(FIND_BOOST_VERSION 1.55)
 
+set(USE_ROCKSDB OFF CACHE BOOL "Build with rocksdb backend?")
+
 ## This section is specifically for RocksDB build options that we've disabled for maximum portability
 set(ENABLE_AVX OFF CACHE STRING "Enable RocksDB AVX/AVX2? Defaults to OFF")
 set(ENABLE_LEAF_FRAME OFF CACHE STRING "Enable RocksDB OMIT_LEAF_FRAME_POINTER detection? Defaults to OFF")
@@ -83,6 +85,9 @@ set(STATIC ON CACHE BOOL FORCE "Link libraries statically? Forced to ON")
 
 # This section helps us set up RocksDB for maximum portability
 set(ENABLE_AVX OFF CACHE STRING "Enable RocksDB AVX/AVX2 support detection? Defaults to OFF")
+
+# So we can use std::string with rapidjson
+add_definitions(-DRAPIDJSON_HAS_STDSTRING)
 
 ## This section helps us tag our builds with the git commit information
 set(COMMIT_ID_IN_VERSION ON CACHE BOOL "Include commit ID in version")
@@ -276,13 +281,15 @@ add_subdirectory(external)
 add_subdirectory(src)
 
 ## We need to setup the RocksDB build environment to match our system
-include_directories(${CMAKE_SOURCE_DIR}/external/lz4)
-if (NOT ROCKSDB_FOUND)
-  if(NOT MSVC)
-    execute_process(
-      COMMAND cmake ${CMAKE_CURRENT_SOURCE_DIR}/external/rocksdb -DWITH_GFLAGS=0 -DCMAKE_BUILD_TYPE=MinSizeRel -DWITH_TESTS=OFF -DWITH_TOOLS=OFF -DPORTABLE=ON -DWITH_LZ4=ON -B${PROJECT_BINARY_DIR}/rocksdb
-    )
-    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${PROJECT_BINARY_DIR}/rocksdb/librocksdb.a")
+if(USE_ROCKSDB)
+  include_directories(${CMAKE_SOURCE_DIR}/external/lz4)
+  if (NOT ROCKSDB_FOUND)
+    if(NOT MSVC)
+      execute_process(
+        COMMAND cmake ${CMAKE_CURRENT_SOURCE_DIR}/external/rocksdb -DWITH_GFLAGS=0 -DCMAKE_BUILD_TYPE=MinSizeRel -DWITH_TESTS=OFF -DWITH_TOOLS=OFF -DPORTABLE=ON -DWITH_LZ4=ON -B${PROJECT_BINARY_DIR}/rocksdb
+      )
+      set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${PROJECT_BINARY_DIR}/rocksdb/librocksdb.a")
+    endif()
   endif()
 endif()
 
