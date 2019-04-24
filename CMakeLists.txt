@@ -18,20 +18,12 @@ set(CMAKE_SUPPRESS_REGENERATION ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(FIND_BOOST_VERSION 1.55)
 
-set(USE_ROCKSDB OFF CACHE BOOL "Build with rocksdb backend?")
-
-## This section is specifically for RocksDB build options that we've disabled for maximum portability
-set(ENABLE_AVX OFF CACHE STRING "Enable RocksDB AVX/AVX2? Defaults to OFF")
-set(ENABLE_LEAF_FRAME OFF CACHE STRING "Enable RocksDB OMIT_LEAF_FRAME_POINTER detection? Defaults to OFF")
-set(ENABLE_SSE42 OFF CACHE STRING "Enable RocksDB SSE4.2 support detection? Defaults to OFF")
-set(ENABLE_THREAD_LOCAL OFF CACHE STRING "Enable RocksDB THREAD_LOCAL support detection? Defaults to OFF")
-set(ENABLE_SYNC_FILE_RANGE_WRITE OFF CACHE STRING "Enable RocksDB SYNC_FILE_RANGE_WRITE support detection? Defaults to OFF")
-set(ENABLE_PTHREAD_MUTEX_ADAPTIVE_NP OFF CACHE STRING "Enable RocksDB PTHREAD_MUTEX_ADAPTIVE_NP support detection? Defaults to OFF")
-set(ENABLE_MALLOC_USABLE_SIZE OFF CACHE STRING "Enable RocksDB MALLOC_USABLE_SIZE support detection? Defaults to OFF")
-set(ENABLE_SCHED_GETCPU OFF CACHE STRING "Enable RocksDB SCHED_GETCPU support detection? Defaults to OFF")
-set(WITH_LZ4 ON CACHE STRING "Enable lz4 compression")
-
 option(WITH_LITE_WALLET "Lite wallet specific" OFF)
+
+## This section is for settings found in the slow-hash routine(s) that may benefit some systems (mostly ARM)
+set(FORCE_USE_HEAP ON CACHE BOOL "Force the use of heap memory allocation")
+set(NO_AES OFF CACHE BOOL "Turn off Hardware AES instructions?")
+set(NO_OPTIMIZED_MULTIPLY_ON_ARM OFF CACHE BOOL "Turn off Optimized Multiplication on ARM?")
 
 if (NOT ARCH OR ARCH STREQUAL "" OR ARCH STREQUAL "native" OR ARCH STREQUAL "default")
   set(ARCH_ID "${CMAKE_SYSTEM_PROCESSOR}")
@@ -275,21 +267,6 @@ elseif(NOT MSVC)
   set(Boost_LIBRARIES "${Boost_LIBRARIES};rt")
 endif()
 
-find_package(Rocksdb 5.15.10)
-
 add_subdirectory(external)
 add_subdirectory(src)
-
-## We need to setup the RocksDB build environment to match our system
-if(USE_ROCKSDB)
-  include_directories(${CMAKE_SOURCE_DIR}/external/lz4)
-  if (NOT ROCKSDB_FOUND)
-    if(NOT MSVC)
-      execute_process(
-        COMMAND cmake ${CMAKE_CURRENT_SOURCE_DIR}/external/rocksdb -DWITH_GFLAGS=0 -DCMAKE_BUILD_TYPE=MinSizeRel -DWITH_TESTS=OFF -DWITH_TOOLS=OFF -DPORTABLE=ON -DWITH_LZ4=ON -B${PROJECT_BINARY_DIR}/rocksdb
-      )
-      set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${PROJECT_BINARY_DIR}/rocksdb/librocksdb.a")
-    endif()
-  endif()
-endif()
 
