@@ -21,6 +21,7 @@ using namespace CryptoNote;
 namespace
 {
 const uint64_t MAX_DIRTY = 10000;
+const size_t MAPSIZE_MIN_AVAIL = 512ULL * 1024 * 1024;
 } // namespace
 
 namespace CryptoNote
@@ -46,7 +47,7 @@ MainChainStorageLmdb::MainChainStorageLmdb(const std::string &blocksFilename, co
     if (mapsize == 0)
     {
         // starts with 512M
-        mapsize += 512ULL * 1024 * 1024;
+        mapsize += MAPSIZE_MIN_AVAIL;
     }
 
     m_db.set_mapsize(mapsize);
@@ -55,14 +56,14 @@ MainChainStorageLmdb::MainChainStorageLmdb(const std::string &blocksFilename, co
     {
         //m_db.open(blocksFilename.c_str(), MDB_NOSUBDIR|MDB_NORDAHEAD|MDB_NOMETASYNC|MDB_WRITEMAP|MDB_MAPASYNC, 0664);
         //m_db.open(blocksFilename.c_str(), MDB_NOSUBDIR|MDB_NOSYNC|MDB_WRITEMAP|MDB_MAPASYNC|MDB_NORDAHEAD, 0664);
-        m_db.open(blocksFilename.c_str(), MDB_NOSUBDIR | MDB_WRITEMAP | MDB_MAPASYNC | MDB_NORDAHEAD, 0664);
+        m_db.open(blocksFilename.c_str(), MDB_NOSUBDIR | MDB_NOMETASYNC | MDB_WRITEMAP | MDB_MAPASYNC | MDB_NORDAHEAD, 0664);
     }
     catch (std::exception &e)
     {
         throw std::runtime_error("Failed to create database" + std::string(e.what()));
     }
 
-    // prepare tx handle, so we can reuse it for batch read/write
+    // prepare tx handle
     lmdb::txn_begin(m_db, nullptr, MDB_RDONLY, &rtxn);
     rodbi = lmdb::dbi::open(rtxn, nullptr);
 
@@ -77,21 +78,17 @@ MainChainStorageLmdb::MainChainStorageLmdb(const std::string &blocksFilename, co
 MainChainStorageLmdb::~MainChainStorageLmdb()
 {
     //std::cout << "Closing blockchain db." << std::endl;
-    try
+    if(rtxn != nullptr)
     {
+        lmdb::txn_abort(rtxn);
+    }
+
+    if(wtxn != nullptr){
         lmdb::txn_commit(wtxn);
     }
-    catch (...)
-    {
-    }
-    try
-    {
-        lmdb::txn_commit(rtxn);
-    }
-    catch (...)
-    {
-    }
-    m_db.sync();
+
+    m_db.sync(true);
+    m_db.close();
 }
 
 void MainChainStorageLmdb::pushBlock(const RawBlock &rawBlock)
@@ -139,18 +136,18 @@ void MainChainStorageLmdb::pushBlock(const RawBlock &rawBlock)
 void MainChainStorageLmdb::popBlock()
 {
 
-    renewRoTxn();
+    
+    renewRwTxn(false);
 
     {
-        auto cursor = lmdb::cursor::open(wtxn, rodbi);
+        auto cursor = lmdb::cursor::open(wtxn, rwdbi);
         std::string_view key, val;
         if (cursor.get(key, val, MDB_LAST))
         {
             cursor.del();
             cursor.close();
-
-            lmdb::txn_commit(wtxn);
-            lmdb::txn_begin(m_db, nullptr, 0, &wtxn);
+            // lmdb::txn_commit(wtxn);
+            // lmdb::txn_begin(m_db, nullptr, 0, &wtxn);
         }
         else
         {
@@ -188,7 +185,7 @@ RawBlock MainChainStorageLmdb::getBlockByIndex(const uint32_t index)
         try
         {
             lmdb::txn_commit(wtxn);
-            m_db.sync();
+            m_db.sync(false);
         }
         catch (...)
         {
@@ -216,8 +213,24 @@ void MainChainStorageLmdb::initializeBlockCount()
     }
 }
 
+void MainChainStorageLmdb::clear()
+{
+    throw std::runtime_error("NotImplemented");
+    renewRwTxn(false);
+
+    {
+        rwdbi.drop(wtxn, 0);
+    }
+}
+
 void MainChainStorageLmdb::renewRoTxn()
 {
+    if(rtxn == nullptr)
+    {
+        lmdb::txn_begin(m_db, nullptr, MDB_RDONLY, &rtxn);
+        return;
+    }
+
     try
     {
         lmdb::txn_reset(rtxn);
@@ -234,8 +247,15 @@ void MainChainStorageLmdb::renewRoTxn()
     {
     }
 }
+
 void MainChainStorageLmdb::renewRwTxn(bool sync)
 {
+    if(wtxn == nullptr)
+    {
+        lmdb::txn_begin(m_db, nullptr, 0, &wtxn);
+        return;
+    }
+
     try
     {
         lmdb::txn_commit(wtxn);
@@ -246,7 +266,7 @@ void MainChainStorageLmdb::renewRwTxn(bool sync)
 
     if (sync)
     {
-        m_db.sync();
+        m_db.sync(false);
     }
 
     try
@@ -258,27 +278,11 @@ void MainChainStorageLmdb::renewRwTxn(bool sync)
     }
 }
 
-void MainChainStorageLmdb::clear()
-{
-    throw std::runtime_error("NotImplemented");
-
-    {
-        lmdb::dbi dbi = lmdb::dbi::open(wtxn, nullptr);
-        dbi.drop(wtxn, 0);
-        lmdb::txn_commit(wtxn);
-        lmdb::txn_begin(m_db, nullptr, 0, &wtxn);
-    }
-}
-
 void MainChainStorageLmdb::checkResize()
 {
     /** assumed to be called after all tx has been commited **/
-    const uint64_t min_avail = 512 * 1024 * 1024;
-    uint64_t size_avail;
-    uint64_t mapsize;
-
-    // reset/renew ro cursor
-    //renewRoTxn();
+    size_t size_avail = 0;
+    size_t mapsize = 0;
 
     {
         MDB_stat stat = rodbi.stat(rtxn);
@@ -288,16 +292,14 @@ void MainChainStorageLmdb::checkResize()
         size_avail = mapsize - (stat.ms_psize * info.me_last_pgno);
     }
 
-    if (size_avail > min_avail)
+    if (size_avail < MAPSIZE_MIN_AVAIL)
     {
-        return;
+        // flush to disk (only when NOT using MDB_NOSYNC flag)
+        m_db.sync(true);
+
+        mapsize += 1ULL << 30;
+        m_db.set_mapsize(mapsize);    
     }
-
-    // flush to disk (only when NOT using MDB_NOSYNC)
-    m_db.sync();
-
-    mapsize += 1ULL << 30;
-    m_db.set_mapsize(mapsize);
 }
 
 std::unique_ptr<IMainChainStorage> createSwappedMainChainStorageLmdb(const std::string &dataDir, const Currency &currency)

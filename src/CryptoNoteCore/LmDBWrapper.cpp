@@ -19,7 +19,10 @@ namespace
 {
     const std::string DB_NAME = "DB";
     const std::string TESTNET_DB_NAME = "testnet_DB";
+    /* @todo: parameterize this? cmd args? */
     const uint64_t MAX_DIRTY = 200000;
+    /* min. available/empty room in the db */
+    const size_t MAPSIZE_MIN_AVAIL = 512ULL * 1024 * 1024;
 } // namespace
 
 LmDBWrapper::LmDBWrapper(std::shared_ptr<Logging::ILogger> logger) : logger(logger, "LmDBWrapper"), state(NOT_INITIALIZED)
@@ -64,7 +67,7 @@ void LmDBWrapper::init(const DataBaseConfig &config)
     }
 
     /* set initial mapsize */
-    uint64_t mapsize = 0;
+    size_t mapsize = 0;
     try
     {
         mapsize = fs::file_size(m_dbFile);
@@ -72,10 +75,10 @@ void LmDBWrapper::init(const DataBaseConfig &config)
     catch (...)
     {
     }
+
     if (mapsize == 0)
     {
-        // starts with 512M
-        mapsize += 512ULL * 1024 * 1024;
+        mapsize += MAPSIZE_MIN_AVAIL;
     }
 
     logger(DEBUGGING) << "Initial DB mapsize: " << mapsize << " bytes";
@@ -96,8 +99,7 @@ void LmDBWrapper::init(const DataBaseConfig &config)
     lmdb::txn_begin(m_db, nullptr, MDB_RDONLY, &rotxn);
     rodbi = lmdb::dbi::open(rotxn, nullptr);
 
-    /* resize mapsize if needed.
-       on init, do this before initializing write tx handle */
+    /* resize mapsize if needed. on init, do this before initializing write tx handle */
     checkResize(true);
 
     /* write tx handle */
@@ -118,8 +120,19 @@ void LmDBWrapper::shutdown()
         throw std::system_error(make_error_code(CryptoNote::error::DataBaseErrorCodes::NOT_INITIALIZED));
     }
 
-    logger(INFO) << "Finalizing DB Write.";
-    m_db.sync();
+    logger(INFO) << "Finalizing DB write, please wait...";
+    if(rotxn != nullptr)
+    {
+        lmdb::txn_abort(rotxn);
+    }
+
+    if(rwtxn != nullptr)
+    {
+        lmdb::txn_commit(rwtxn);
+    }
+    /* force sync */
+    m_db.sync(true);
+
     logger(INFO) << "Closing DB.";
     m_db.close();
     state.store(NOT_INITIALIZED);
@@ -171,6 +184,7 @@ std::error_code LmDBWrapper::write(IWriteBatch &batch)
 
     /* insert */
     uint32_t num_inserted = 0;
+    /** this loop can be huge **/
     for (const std::pair<std::string, std::string> &kvPair : rawData)
     {
         if (rwdbi.put(rwtxn, kvPair.first, kvPair.second))
@@ -215,7 +229,7 @@ std::error_code LmDBWrapper::write(IWriteBatch &batch)
     {
         m_dirty = 0;
         logger(TRACE) << "Flushing dirty commits to disk";
-        m_db.sync(0);
+        m_db.sync(false);
     }
 
     return errCode;
@@ -279,6 +293,12 @@ fs::path LmDBWrapper::getDataDir(const DataBaseConfig &config)
 void LmDBWrapper::renewRoTxHandle()
 {
     //logger(TRACE) << "DB_RENEW_RO...";
+    if(rotxn == nullptr)
+    {
+        lmdb::txn_begin(m_db, nullptr, MDB_RDONLY, &rotxn);
+        return;
+    }
+
     try
     {
         lmdb::txn_reset(rotxn);
@@ -300,18 +320,24 @@ void LmDBWrapper::renewRoTxHandle()
 
 void LmDBWrapper::renewRwTxHandle(bool sync)
 {
+    if(rwtxn == nullptr)
+    {
+        lmdb::txn_begin(m_db, nullptr, 0, &rwtxn);
+        return;
+    }
+
     try
     {
         lmdb::txn_commit(rwtxn);
     }
     catch (const std::exception &e)
     {
-        logger(ERROR) << "AH DB_RW_TXN_COMMIT_FAILED: " << e.what();
+        logger(ERROR) << "DB_RW_TXN_COMMIT_FAILED: " << e.what();
     }
 
     if (sync)
     {
-        m_db.sync();
+        m_db.sync(false);
     }
 
     try
@@ -322,20 +348,13 @@ void LmDBWrapper::renewRwTxHandle(bool sync)
     {
         logger(ERROR) << "DB_RW_TXN_BEGIN_FAILED: " << e.what();
     }
-
-    //rwdbi = lmdb::dbi::open(rwtxn, nullptr);
 }
 
 void LmDBWrapper::checkResize(const bool init)
 {
-    //logger(TRACE) << "DB_CHECK_RESIZE...";
-    const size_t min_avail = 512ULL * 1024 * 1024;
     size_t size_avail;
     size_t mapsize;
-
-    // renew tx handle
-    //renewRoTxHandle();
-
+    
     {
         MDB_stat stat = rodbi.stat(rotxn);
 
@@ -347,7 +366,7 @@ void LmDBWrapper::checkResize(const bool init)
         size_avail = mapsize - size_used;
     }
 
-    if (size_avail >= min_avail)
+    if (size_avail >= MAPSIZE_MIN_AVAIL)
     {
         logger(TRACE) << "DB Resize: no resize required, size avail: " << size_avail << " bytes.";
         return;
@@ -366,7 +385,7 @@ void LmDBWrapper::checkResize(const bool init)
         }
     }
 
-    m_db.sync();
+    m_db.sync(true);
 
     const size_t extra = 1ULL << 30;
     mapsize += extra;
