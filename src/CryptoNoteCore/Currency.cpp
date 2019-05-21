@@ -738,7 +738,7 @@ Difficulty Currency::nextDifficultyV5(uint32_t height, uint8_t blockMajorVersion
 
 	// Hard code D if there are not at least N+1 BLOCKS after fork (or genesis)
 	// This helps a lot in preventing a very common problem in CN forks from conflicting difficulties.
-	uint64_t difficulty_guess = !isTestnet() ? 1000000000 : 10000;
+	uint64_t difficulty_guess = !isTestnet() ? 10000 : 10000;
 	if (height >= upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) && height < upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) + N) { return difficulty_guess; }
 
 	uint64_t L(0), next_D, i, this_timestamp(0), previous_timestamp(0), avg_D;
@@ -768,8 +768,8 @@ Difficulty Currency::nextDifficultyV5(uint32_t height, uint8_t blockMajorVersion
 	}
 
 	// minimum limit
-	if (!isTestnet() && next_D < 1000000) {
-		next_D = 1000000;
+	if (!isTestnet() && next_D < 10000) {
+		next_D = 10000;
 	}
 
 	return next_D;
