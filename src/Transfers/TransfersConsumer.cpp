@@ -138,7 +138,15 @@ ITransfersSubscription& TransfersConsumer::addSubscription(const AccountSubscrip
     res.reset(new TransfersSubscription(m_currency, m_logger.getLogger(), subscription));
     m_spendKeys.insert(subscription.keys.address.spendPublicKey);
 
-    updateSyncStart();
+    //updateSyncStart();
+    if (m_subscriptions.size() == 1) {
+      m_syncStart = res->getSyncStart();
+    }
+    else {
+      auto subStart = res->getSyncStart();
+      m_syncStart.height = std::min(m_syncStart.height, subStart.height);
+      m_syncStart.timestamp = std::min(m_syncStart.timestamp, subStart.timestamp);
+    }
   }
 
   return *res;
