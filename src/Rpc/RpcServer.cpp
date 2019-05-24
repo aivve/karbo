@@ -263,40 +263,40 @@ bool RpcServer::isCoreReady() {
 }
 
 bool RpcServer::masternode_check_incoming_tx(const BinaryArray& tx_blob) {
-	Crypto::Hash tx_hash = NULL_HASH;
-	Crypto::Hash tx_prefixt_hash = NULL_HASH;
-	Transaction tx;
-	if (!parseAndValidateTransactionFromBinaryArray(tx_blob, tx, tx_hash, tx_prefixt_hash)) {
-		logger(INFO) << "Could not parse tx from blob";
-		return false;
-	}
+  Crypto::Hash tx_hash = NULL_HASH;
+  Crypto::Hash tx_prefixt_hash = NULL_HASH;
+  Transaction tx;
+  if (!parseAndValidateTransactionFromBinaryArray(tx_blob, tx, tx_hash, tx_prefixt_hash)) {
+    logger(INFO) << "Could not parse tx from blob";
+    return false;
+  }
 	
-	// always relay fusion transactions
-	uint64_t inputs_amount = 0;
+  // always relay fusion transactions
+  uint64_t inputs_amount = 0;
   getInputsMoneyAmount(tx, inputs_amount);
-	uint64_t outputs_amount = get_outs_money_amount(tx);
+  uint64_t outputs_amount = get_outs_money_amount(tx);
 
-	const uint64_t fee = inputs_amount - outputs_amount;
-	if (fee == 0 && m_core.getCurrency().isFusionTransaction(tx, tx_blob.size())) {
-		logger(DEBUGGING) << "Masternode received fusion transaction, relaying with no fee check";
-		return true;
-	}
+  const uint64_t fee = inputs_amount - outputs_amount;
+  if (fee == 0 && m_core.getCurrency().isFusionTransaction(tx, tx_blob.size())) {
+    logger(DEBUGGING) << "Masternode received fusion transaction, relaying with no fee check";
+    return true;
+  }
 
-	CryptoNote::TransactionPrefix transaction = *static_cast<const TransactionPrefix*>(&tx);
+  CryptoNote::TransactionPrefix transaction = *static_cast<const TransactionPrefix*>(&tx);
 
-	std::vector<uint32_t> out;
-	uint64_t amount;
+  std::vector<uint32_t> out;
+  uint64_t amount;
 
-	if (!CryptoNote::findOutputsToAccount(transaction, m_fee_acc, m_view_key, out, amount)) {
-		logger(INFO) << "Could not find outputs to masternode fee address";
-		return false;
-	}
+  if (!CryptoNote::findOutputsToAccount(transaction, m_fee_acc, m_view_key, out, amount)) {
+    logger(INFO) << "Could not find outputs to masternode fee address";
+    return false;
+  }
 
-	if (amount != 0) {
-		logger(INFO) << "Masternode received relayed transaction fee: " << m_core.getCurrency().formatAmount(amount) << " KRB";
-		return true;
-	}
-	return false;
+  if (amount != 0) {
+    logger(INFO) << "Masternode received relayed transaction fee: " << m_core.getCurrency().formatAmount(amount) << " KRB";
+    return true;
+  }
+  return false;
 }
 
 //
