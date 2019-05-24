@@ -900,7 +900,6 @@ std::error_code InProcessNode::doGetBlocks(const std::vector<Crypto::Hash>& bloc
   return std::error_code();
 }
 
-
 void InProcessNode::getTransactions(const std::vector<Crypto::Hash>& transactionHashes,
                                     std::vector<TransactionDetails>& transactions, const Callback& callback) {
   std::unique_lock<std::mutex> lock(mutex);

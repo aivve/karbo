@@ -80,9 +80,6 @@ public:
   virtual void getBlocks(const std::vector<Crypto::Hash>& blockHashes, std::vector<CryptoNote::BlockDetails>& blocks,
     const Callback& callback) override { }
 
-  virtual void getBlocks(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t blocksNumberLimit, std::vector<CryptoNote::BlockDetails>& blocks, uint32_t& blocksNumberWithinTimestamps,
-    const Callback& callback) override { }
-
   virtual void getBlock(const uint32_t blockHeight, CryptoNote::BlockDetails &block,
     const Callback& callback) override { }
 

@@ -175,7 +175,7 @@ void sendMultipleTransactions(CryptoNote::WalletGreen &wallet,
 
             if (neededBalance < wallet.getActualBalance())
             {
-                const size_t id = wallet.transfer(tx, txSecretKey);
+                const size_t id = wallet.transfer(tx/*, txSecretKey*/);
 
                 const CryptoNote::WalletTransaction sentTx 
                     = wallet.getTransaction(id);
