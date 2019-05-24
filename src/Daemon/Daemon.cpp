@@ -32,6 +32,7 @@
 #include "Common/PathTools.h"
 #include "Common/Util.h"
 #include "crypto/hash.h"
+#include "CheckpointsData.h"
 #include "CryptoNoteCore/CryptoNoteTools.h"
 #include "CryptoNoteCore/Core.h"
 #include "CryptoNoteCore/Currency.h"
