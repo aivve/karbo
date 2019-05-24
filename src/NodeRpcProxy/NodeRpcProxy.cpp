@@ -504,7 +504,9 @@ void NodeRpcProxy::getBlocks(const std::vector<uint32_t>& blockHeights, std::vec
     return;
   }
 
-  scheduleRequest(std::bind(&NodeRpcProxy::doGetBlocksByHeights, this, std::cref(blockHeights), std::ref(blocks)), callback);
+  std::vector<BlockDetails> tmp;
+  blocks.push_back(tmp);
+  scheduleRequest(std::bind(&NodeRpcProxy::doGetBlocksByHeights, this, std::cref(blockHeights), std::ref(tmp)), callback);
 }
 
 void NodeRpcProxy::getBlocks(const std::vector<Crypto::Hash>& blockHashes, std::vector<BlockDetails>& blocks, const Callback& callback) {
@@ -537,7 +539,7 @@ void NodeRpcProxy::getTransactions(const std::vector<Crypto::Hash>& transactionH
   scheduleRequest(std::bind(&NodeRpcProxy::doGetTransactions, this, std::cref(transactionHashes), std::ref(transactions)), callback);
 }
 
-void NodeRpcProxy::getPoolTransactions(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t transactionsNumberLimit, std::vector<TransactionDetails>& transactions, uint64_t& transactionsNumberWithinTimestamps, const Callback& callback) {
+/*void NodeRpcProxy::getPoolTransactions(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t transactionsNumberLimit, std::vector<TransactionDetails>& transactions, uint64_t& transactionsNumberWithinTimestamps, const Callback& callback) {
   std::lock_guard<std::mutex> lock(m_mutex);
   if (m_state != STATE_INITIALIZED) {
     callback(make_error_code(error::NOT_INITIALIZED));
@@ -557,7 +559,7 @@ void NodeRpcProxy::getTransactionsByPaymentId(const Crypto::Hash& paymentId, std
 
   // TODO NOT IMPLEMENTED
   callback(std::error_code());
-}
+}*/
 
 void NodeRpcProxy::isSynchronized(bool& syncStatus, const Callback& callback) {
   std::lock_guard<std::mutex> lock(m_mutex);

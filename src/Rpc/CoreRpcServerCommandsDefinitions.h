@@ -797,26 +797,6 @@ struct COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HEIGHTS {
   };
 };
 
-struct COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HASHES {
-  struct request {
-    std::vector<Crypto::Hash> blockHashes;
-
-    void serialize(ISerializer& s) {
-      KV_MEMBER(blockHashes);
-    }
-  };
-
-  struct response {
-    std::vector<BlockDetails> blocks;
-    std::string status;
-
-    void serialize(ISerializer& s) {
-      KV_MEMBER(status)
-      KV_MEMBER(blocks)
-    }
-  };
-};
-
 struct COMMAND_RPC_GET_BLOCK_DETAILS_BY_HEIGHT {
   struct request {
     uint32_t blockHeight;

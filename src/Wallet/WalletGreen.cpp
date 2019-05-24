@@ -3649,13 +3649,14 @@ size_t WalletGreen::getTxSize(const TransactionParameters &sendingTransaction)
 
   std::vector<WalletOuts> wallets;
   if (!sendingTransaction.sourceAddresses.empty()) {
+
     wallets = pickWallets(sendingTransaction.sourceAddresses);
   } else {
     wallets = pickWalletsWithMoney();
   }
 
   PreparedTransaction preparedTransaction;
-  Crypto::SecretKey txSecretKey;
+  //Crypto::SecretKey txSecretKey;
   prepareTransaction(
     std::move(wallets),
     sendingTransaction.destinations,
@@ -3665,8 +3666,7 @@ size_t WalletGreen::getTxSize(const TransactionParameters &sendingTransaction)
     sendingTransaction.unlockTimestamp,
     sendingTransaction.donation,
     changeDestination,
-    preparedTransaction,
-    txSecretKey);
+    preparedTransaction);
 
   BinaryArray transactionData = preparedTransaction.transaction->getTransactionData();
   return transactionData.size();

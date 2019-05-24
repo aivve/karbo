@@ -24,7 +24,7 @@
 namespace CryptoNote {
 
 struct CheckpointData {
-  uint32_t height;
+  uint32_t index;
   const char* blockId;
 };
 

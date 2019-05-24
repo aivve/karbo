@@ -86,10 +86,7 @@ public:
   virtual std::vector<size_t> getDelayedTransactionIds() const override;
   virtual std::vector<TransactionOutputInformation> getTransfers(size_t index, uint32_t flags) const override;
 
-
-//  virtual size_t transfer(const TransactionParameters& sendingTransaction) override;
-
-  virtual size_t transfer(const TransactionParameters& sendingTransaction, Crypto::SecretKey& txSecretKey) override;
+  virtual size_t transfer(const TransactionParameters& sendingTransaction) override;
 
   virtual size_t makeTransaction(const TransactionParameters& sendingTransaction) override;
   virtual void commitTransaction(size_t) override;
