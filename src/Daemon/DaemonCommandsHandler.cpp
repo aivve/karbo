@@ -147,7 +147,7 @@ bool DaemonCommandsHandler::status(const std::vector<std::string>& args) {
     << (synced ? "Synchronized " : "Synchronizing ")
     << topBlkIndex << "/" << last_known_block_index << " (" << get_sync_percentage(topBlkIndex, last_known_block_index) << "%), "
     << "on " << (m_core.getCurrency().isTestnet() ? "testnet, " : "mainnet, ")
-    << "last block hash: " << Common::podToHex(last_block_hash)
+    << "last block hash: " << Common::podToHex(last_block_hash) << ", "
     << "network hashrate: " << get_mining_speed(hashrate) << ", difficulty: " << difficulty << ", "
     << "block v. " << (int)majorVersion << ", "
     << alt_blocks_count << " alt. block(s), "
