@@ -29,8 +29,9 @@
 #include "CryptoNoteCore/Core.h"
 #include "CryptoNoteCore/Miner.h"
 #include "CryptoNoteCore/TransactionExtra.h"
-#include "CryptoNoteProtocol/CryptoNoteProtocolHandlerCommon.h"
 #include "CryptoNoteCore/TransactionUtils.h"
+#include "CryptoNoteCore/CryptoNoteFormatUtils.h"
+#include "CryptoNoteProtocol/CryptoNoteProtocolHandlerCommon.h"
 #include "CryptoNoteProtocol/ICryptoNoteProtocolQuery.h"
 
 #include "P2p/NetNode.h"
