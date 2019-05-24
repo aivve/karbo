@@ -20,6 +20,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <initializer_list>
 
 namespace CryptoNote {
 namespace parameters {

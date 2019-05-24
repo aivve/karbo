@@ -25,7 +25,7 @@
 
 #include <boost/program_options.hpp>
 
-#include "SimpleWallet/PasswordContainer.h"
+#include "Common/PasswordContainer.h"
 
 namespace {
   Tools::PasswordContainer pwd_container;

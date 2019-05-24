@@ -555,6 +555,15 @@ BlockHeaderInfo InProcessNode::getLastLocalBlockHeaderInfo() const {
   return lastLocalBlockHeaderInfo;
 }
 
+void InProcessNode::getFeeAddress() {
+  // Do nothing
+  return;
+}
+
+std::string InProcessNode::feeAddress() const {
+  return std::string();
+}
+
 void InProcessNode::getBlockHashesByTimestamps(uint64_t timestampBegin, size_t secondsCount, std::vector<Crypto::Hash>& blockHashes, const Callback& callback) {
   std::unique_lock<std::mutex> lock(mutex);
   if (state != INITIALIZED) {
@@ -562,18 +571,20 @@ void InProcessNode::getBlockHashesByTimestamps(uint64_t timestampBegin, size_t s
   }
   lock.unlock();
 
-  executeInDispatcherThread([this, timestampBegin, secondsCount, &blockHashes, callback] () mutable {
+  executeInDispatcherThread([this, timestampBegin, secondsCount, &blockHashes, callback]() mutable {
     std::error_code ec;
 
     try {
       blockHashes = core.getBlockHashesByTimestamps(timestampBegin, secondsCount);
-    } catch (std::system_error& e) {
+    }
+    catch (std::system_error& e) {
       ec = e.code();
-    } catch (std::exception&) {
+    }
+    catch (std::exception&) {
       ec = make_error_code(error::INTERNAL_NODE_ERROR);
     }
 
-    executeInRemoteThread([callback, ec] () { callback(ec); });
+    executeInRemoteThread([callback, ec]() { callback(ec); });
   });
 }
 
@@ -805,6 +816,26 @@ void InProcessNode::getBlocks(const std::vector<uint32_t>& blockHeights, std::ve
     auto ec = doGetBlocks(blockHeights, blocks);
     executeInRemoteThread([callback, ec] () { callback(ec); });
   });
+}
+
+void InProcessNode::getBlock(const uint32_t blockHeight, BlockDetails &block, const Callback& callback) {
+  std::unique_lock<std::mutex> lock(mutex);
+  if (state != INITIALIZED) {
+    lock.unlock();
+    callback(make_error_code(CryptoNote::error::NOT_INITIALIZED));
+    return;
+  }
+
+  std::vector<uint32_t> blockHeights;
+  std::vector<std::vector<BlockDetails>> blocks;
+  blockHeights.push_back(blockHeight);
+ 
+  executeInDispatcherThread([=, &blocks]() {
+    auto ec = doGetBlocks(blockHeights, blocks);
+    executeInRemoteThread([callback, ec]() { callback(ec); });
+  });
+
+  block = blocks[0][0];
 }
 
 std::error_code InProcessNode::doGetBlocks(const std::vector<uint32_t>& blockIndexes,
