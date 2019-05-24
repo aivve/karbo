@@ -28,7 +28,6 @@
 #include "InProcessNode/InProcessNode.h"
 #include "Logging/LoggerRef.h"
 #include "PaymentGate/PaymentServiceJsonRpcServer.h"
-#include "CryptoNoteCore/CoreConfig.h"
 #include "CryptoNoteCore/Core.h"
 #include "CryptoNoteCore/DatabaseBlockchainCache.h"
 #include "CryptoNoteCore/DatabaseBlockchainCacheFactory.h"
@@ -173,7 +172,7 @@ void PaymentGateService::runInProcess(Logging::LoggerRef& log) {
   dbConfig.setReadCacheSize(128*1024*1024);
   dbConfig.setWriteBufferSize(128*1024*1024);
   dbConfig.setTestnet(false);
-  dbConfig.setBackgroundThreadsCount(2);
+  dbConfig.setBackgroundThreadsCount(4);
 
   if (dbConfig.isConfigFolderDefaulted()) {
     if (!Tools::create_directories_if_necessary(dbConfig.getDataDir())) {
