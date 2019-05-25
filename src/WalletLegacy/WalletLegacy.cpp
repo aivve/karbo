@@ -591,7 +591,7 @@ size_t WalletLegacy::estimateFusion(const uint64_t& threshold) {
   bucketSizes.fill(0);
   for (auto& out : outputs) {
     uint8_t powerOfTen = 0;
-	if (m_currency.isAmountApplicableInFusionTransactionInput(out.amount, threshold, powerOfTen, m_node.getLastKnownBlockHeight())) {
+	if (m_currency.isAmountApplicableInFusionTransactionInput(out.amount, threshold, powerOfTen)) {
       assert(powerOfTen < std::numeric_limits<uint64_t>::digits10 + 1);
       bucketSizes[powerOfTen]++;
 	}
