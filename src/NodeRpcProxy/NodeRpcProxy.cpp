@@ -68,10 +68,10 @@ NodeRpcProxy::NodeRpcProxy(const std::string& nodeHost, unsigned short nodePort,
     m_pullInterval(5000),
     m_nodeHost(nodeHost),
     m_nodePort(nodePort),
-	m_connected(true),
-	m_peerCount(0),
-	m_networkHeight(0),
-	m_nodeHeight(0) {
+    m_connected(true),
+    m_peerCount(0),
+    m_networkHeight(0),
+    m_nodeHeight(0) {
   resetInternalState();
 }
 
@@ -357,7 +357,7 @@ void NodeRpcProxy::getBlockHashesByTimestamps(uint64_t timestampBegin, size_t se
   }
 
   scheduleRequest(std::bind(&NodeRpcProxy::doGetBlockHashesByTimestamps, this, timestampBegin, secondsCount, std::ref(blockHashes)),
-                  callback);
+    callback);
 }
 
 void NodeRpcProxy::getTransactionHashesByPaymentId(const Crypto::Hash& paymentId, std::vector<Crypto::Hash>& transactionHashes, const INode::Callback& callback) {
@@ -675,7 +675,7 @@ std::error_code NodeRpcProxy::doGetBlocksByHeights(const std::vector<uint32_t>& 
 
   req.blockHeights = blockHeights;
 
-  std::error_code ec = binaryCommand("/get_blocks_details_by_heights.bin", req, resp);
+  std::error_code ec = jsonCommand("/get_blocks_details_by_heights", req, resp);
   if (ec) {
     return ec;
   }
@@ -692,7 +692,7 @@ std::error_code NodeRpcProxy::doGetBlocksByHashes(const std::vector<Crypto::Hash
 
   req.blockHashes = blockHashes;
 
-  std::error_code ec = binaryCommand("/get_blocks_details_by_hashes.bin", req, resp);
+  std::error_code ec = jsonCommand("/get_blocks_details_by_hashes", req, resp);
   if (ec) {
     return ec;
   }
@@ -706,7 +706,7 @@ std::error_code NodeRpcProxy::doGetTransactionHashesByPaymentId(const Crypto::Ha
   COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID::response resp = AUTO_VAL_INIT(resp);
 
   req.paymentId = paymentId;
-  std::error_code ec = binaryCommand("/get_transaction_hashes_by_payment_id.bin", req, resp);
+  std::error_code ec = jsonCommand("/get_transaction_hashes_by_payment_id", req, resp);
   if (ec) {
     return ec;
   }
@@ -720,7 +720,7 @@ std::error_code NodeRpcProxy::doGetTransactions(const std::vector<Crypto::Hash>&
   COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASHES::response resp = AUTO_VAL_INIT(resp);
 
   req.transactionHashes = transactionHashes;
-  std::error_code ec = binaryCommand("/get_transaction_details_by_hashes.bin", req, resp);
+  std::error_code ec = jsonCommand("/get_transaction_details_by_hashes", req, resp);
   if (ec) {
     return ec;
   }

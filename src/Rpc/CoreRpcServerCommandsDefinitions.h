@@ -764,7 +764,7 @@ struct COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HEIGHTS {
     std::vector<uint32_t> blockHeights;
 
     void serialize(ISerializer& s) {
-      serializeAsBinary(blockHeights, "blockHeights", s);
+      KV_MEMBER(blockHeights);
     }
   };
 
@@ -784,7 +784,7 @@ struct COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HASHES {
     std::vector<Crypto::Hash> blockHashes;
 
     void serialize(ISerializer& s) {
-      serializeAsBinary(blockHashes, "blockHashes", s);
+      KV_MEMBER(blockHashes);
     }
   };
 
@@ -836,7 +836,7 @@ struct COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID {
 
     void serialize(ISerializer &s) {
       KV_MEMBER(status)
-      serializeAsBinary(transactionHashes, "transactionHashes", s);
+        KV_MEMBER(transactionHashes);
     }
   };
 };
@@ -846,7 +846,7 @@ struct COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASHES {
     std::vector<Crypto::Hash> transactionHashes;
 
     void serialize(ISerializer &s) {
-      serializeAsBinary(transactionHashes, "transactionHashes", s);
+      KV_MEMBER(transactionHashes);
     }
   };
 
@@ -857,6 +857,26 @@ struct COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASHES {
     void serialize(ISerializer &s) {
       KV_MEMBER(status)
       KV_MEMBER(transactions)
+    }
+  };
+};
+
+struct COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASH {
+  struct request {
+    Crypto::Hash hash;
+
+    void serialize(ISerializer &s) {
+      KV_MEMBER(hash);
+    }
+  };
+
+  struct response {
+    TransactionDetails transaction;
+    std::string status;
+
+    void serialize(ISerializer &s) {
+      KV_MEMBER(status)
+      KV_MEMBER(transaction)
     }
   };
 };
@@ -876,7 +896,7 @@ struct COMMAND_RPC_GET_BLOCK_DETAILS_BY_HEIGHT {
 
     void serialize(ISerializer& s) {
       KV_MEMBER(status)
-        KV_MEMBER(block)
+      KV_MEMBER(block)
     }
   };
 };
