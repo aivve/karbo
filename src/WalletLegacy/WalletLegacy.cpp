@@ -613,7 +613,7 @@ std::list<TransactionOutputInformation> WalletLegacy::selectFusionTransfersToSen
   bucketSizes.fill(0);
   for (auto& out : outputs) {
     uint8_t powerOfTen = 0;
-    if (m_currency.isAmountApplicableInFusionTransactionInput(out.amount, threshold, powerOfTen, m_node.getLastKnownBlockHeight())) {
+    if (m_currency.isAmountApplicableInFusionTransactionInput(out.amount, threshold, powerOfTen)) {
       allFusionReadyOuts.push_back(std::move(out));
       assert(powerOfTen < std::numeric_limits<uint64_t>::digits10 + 1);
       bucketSizes[powerOfTen]++;
