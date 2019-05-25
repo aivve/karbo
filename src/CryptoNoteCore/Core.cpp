@@ -2396,8 +2396,14 @@ TransactionDetails Core::getTransactionDetails(const Crypto::Hash& transactionHa
       assert(txInToKeyDetails.input.outputIndexes.size() == outputReferences.size());
 
       txInToKeyDetails.mixin = txInToKeyDetails.input.outputIndexes.size();
-      txInToKeyDetails.output.number = outputReferences.back().second;
-      txInToKeyDetails.output.transactionHash = outputReferences.back().first;
+      
+      for (const auto& r : outputReferences) {
+        TransactionOutputReferenceDetails d;
+        d.number = r.second;
+        d.transactionHash = r.first;
+        txInToKeyDetails.outputs.push_back(d);
+      }
+
       txInDetails = txInToKeyDetails;
     } else if (transaction->getInputType(i) == TransactionTypes::InputType::Multisignature) {
       MultisignatureInputDetails txInMultisigDetails;
