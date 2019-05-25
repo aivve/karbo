@@ -88,6 +88,7 @@ public:
 
   virtual uint64_t actualBalance() override;
   virtual uint64_t pendingBalance() override;
+  virtual uint64_t dustBalance() override;
 
   virtual size_t getTransactionCount() override;
   virtual size_t getTransferCount() override;

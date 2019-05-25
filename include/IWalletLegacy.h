@@ -114,7 +114,7 @@ public:
 
   virtual uint64_t actualBalance() = 0;
   virtual uint64_t pendingBalance() = 0;
-  //virtual uint64_t dustBalance() = 0;
+  virtual uint64_t dustBalance() = 0;
 
   virtual size_t getTransactionCount() = 0;
   virtual size_t getTransferCount() = 0;

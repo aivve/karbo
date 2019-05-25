@@ -2549,7 +2549,7 @@ uint64_t Core::getMinimalFee() {
 }
 
 uint64_t Core::getMinimalFeeForHeight(uint32_t height) {
-  return currency.minimumFee();
+  return CryptoNote::parameters::MAXIMUM_FEE;
 }
 
 void Core::throwIfNotInitialized() const {

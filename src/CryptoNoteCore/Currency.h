@@ -170,6 +170,8 @@ public:
 
   size_t getApproximateMaximumInputCount(size_t transactionSize, size_t outputCount, size_t mixinCount) const;
 
+  static const std::vector<uint64_t> PRETTY_AMOUNTS;
+
 private:
   Currency(Logging::ILogger& log) : logger(log, "currency") {
   }
@@ -242,8 +244,6 @@ private:
   std::string m_blocksFileName;
   std::string m_blockIndexesFileName;
   std::string m_txPoolFileName;
-
-  static const std::vector<uint64_t> PRETTY_AMOUNTS;
 
   bool m_testnet;
 

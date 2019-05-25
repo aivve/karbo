@@ -437,8 +437,8 @@ bool Currency::parseAmount(const std::string& str, uint64_t& amount) const {
 }
 
 // Copyright (c) 2017-2018 Zawy 
-// http://zawy1.blogspot.com/2017/12/using-difficulty-to-get-constant-value.html
-// Moore's law application by Sergey Kozlov
+  // http://zawy1.blogspot.com/2017/12/using-difficulty-to-get-constant-value.html
+  // Moore's law application by Sergey Kozlov
 uint64_t Currency::getMinimalFee(uint64_t dailyDifficulty, uint64_t reward, uint64_t avgHistoricalDifficulty, uint64_t medianHistoricalReward, uint32_t height) const {
   const uint64_t blocksInTwoYears = CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY * 365 * 2;
   const double gauge = double(0.25);
