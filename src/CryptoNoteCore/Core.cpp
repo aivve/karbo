@@ -1174,7 +1174,7 @@ bool Core::getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, c
   }
 
   b.previousBlockHash = getTopBlockHash();
-  b.timestamp = time(nullptr);
+  b.timestamp = static_cast<uint64_t>(time(nullptr));
 
   // Don't generate a block template with invalid timestamp
   // Fix by Jagerman

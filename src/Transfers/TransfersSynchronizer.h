@@ -42,7 +42,7 @@ class INode;
 class TransfersSyncronizer : public ITransfersSynchronizer, public IBlockchainConsumerObserver {
 public:
   TransfersSyncronizer(const CryptoNote::Currency& currency, Logging::ILogger& logger, IBlockchainSynchronizer& sync, INode& node);
-  virtual ~TransfersSyncronizer();
+  virtual ~TransfersSyncronizer() override;
 
   void initTransactionPool(const std::unordered_set<Crypto::Hash>& uncommitedTransactions);
 

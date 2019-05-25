@@ -827,6 +827,7 @@ bool RpcServer::f_on_transaction_json(const F_COMMAND_RPC_GET_TRANSACTION_DETAIL
         CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
         "Internal error: can't get transaction by hash. Hash = " + Common::podToHex(hash) + '.' };
     }
+    res.txDetails.confirmations = m_protocol.getObservedHeight() - blockHeight;
     blockHash = m_core.getBlockHashByIndex(blockHeight);
     BlockTemplate blk = m_core.getBlockByHash(blockHash);
     BlockDetails blkDetails = m_core.getBlockDetails(blockHash);
