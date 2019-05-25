@@ -498,7 +498,7 @@ namespace Tools {
   //------------------------------------------------------------------------------------------------------------------------------
   bool wallet_rpc_server::on_sign(const wallet_rpc::COMMAND_RPC_SIGN::request& req, wallet_rpc::COMMAND_RPC_SIGN::response& res)
   {
-    res.signature = m_wallet.sign(req.data);
+    res.signature = m_wallet.sign_message(req.data);
     return true;
   }
   //------------------------------------------------------------------------------------------------------------------------------
@@ -518,7 +518,7 @@ namespace Tools {
       throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_SIGNATURE, std::string("Signature decoding error"));
       return false;
     }
-    res.good = m_wallet.verify(req.data, address, req.signature);
+    res.good = m_wallet.verify_message(req.data, address, req.signature);
     return true;
   }
 

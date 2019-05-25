@@ -2544,6 +2544,14 @@ bool Core::getTransactionsByPaymentId(const Crypto::Hash& paymentId, std::vector
 	return true;
 }
 
+uint64_t Core::getMinimalFee() {
+  return getMinimalFeeForHeight(get_current_blockchain_height() - 1);
+}
+
+uint64_t Core::getMinimalFeeForHeight(uint32_t height) {
+  return currency.minimumFee();
+}
+
 void Core::throwIfNotInitialized() const {
   if (!initialized) {
     throw std::system_error(make_error_code(error::CoreErrorCode::NOT_INITIALIZED));

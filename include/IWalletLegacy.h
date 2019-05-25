@@ -86,6 +86,7 @@ public:
   virtual void synchronizationCompleted(std::error_code result) {}
   virtual void actualBalanceUpdated(uint64_t actualBalance) {}
   virtual void pendingBalanceUpdated(uint64_t pendingBalance) {}
+  virtual void unmixableBalanceUpdated(uint64_t dustBalance) {}
   virtual void externalTransactionCreated(TransactionId transactionId) {}
   virtual void sendTransactionCompleted(TransactionId transactionId, std::error_code result) {}
   virtual void transactionUpdated(TransactionId transactionId) {}
@@ -136,8 +137,8 @@ public:
   virtual bool getTxProof(Crypto::Hash& txid, CryptoNote::AccountPublicAddress& address, std::string& tx_key, std::string& sig_str) = 0;
   virtual bool checkTxProof(Crypto::Hash& txid, CryptoNote::AccountPublicAddress& address, std::string& sig_str) = 0;
 
-  virtual std::string sign(const std::string &data) = 0;
-  virtual bool verify(const std::string &data, const CryptoNote::AccountPublicAddress &address, const std::string &signature) = 0;
+  virtual std::string sign_message(const std::string &data) = 0;
+  virtual bool verify_message(const std::string &data, const CryptoNote::AccountPublicAddress &address, const std::string &signature) = 0;
 };
 
 }

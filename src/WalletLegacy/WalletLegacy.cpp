@@ -466,23 +466,23 @@ std::vector<Payments> WalletLegacy::getTransactionsByPaymentIds(const std::vecto
   return m_transactionsCache.getTransactionsByPaymentIds(paymentIds);
 }
 
-std::string WalletLegacy::sign(const std::string &data) {
+std::string WalletLegacy::sign_message(const std::string &message) {
   Crypto::Hash hash;
-  Crypto::cn_fast_hash(data.data(), data.size(), hash);
+  Crypto::cn_fast_hash(message.data(), message.size(), hash);
   const CryptoNote::AccountKeys &keys = m_account.getAccountKeys();
   Crypto::Signature signature;
   Crypto::generate_signature(hash, keys.address.spendPublicKey, keys.spendSecretKey, signature);
   return std::string("SigV1") + Tools::Base58::encode(std::string((const char *)&signature, sizeof(signature)));
 }
 
-bool WalletLegacy::verify(const std::string &data, const CryptoNote::AccountPublicAddress &address, const std::string &signature) {
+bool WalletLegacy::verify_message(const std::string &message, const CryptoNote::AccountPublicAddress &address, const std::string &signature) {
   const size_t header_len = strlen("SigV1");
   if (signature.size() < header_len || signature.substr(0, header_len) != "SigV1") {
     std::cout << "Signature header check error";
     return false;
   }
   Crypto::Hash hash;
-  Crypto::cn_fast_hash(data.data(), data.size(), hash);
+  Crypto::cn_fast_hash(message.data(), message.size(), hash);
   std::string decoded;
   if (!Tools::Base58::decode(signature.substr(header_len), decoded)) {
     std::cout <<"Signature decoding error";
@@ -711,6 +711,13 @@ void WalletLegacy::notifyIfBalanceChanged() {
 
   if (prevPending != pending) {
     m_observerManager.notify(&IWalletLegacyObserver::pendingBalanceUpdated, pending);
+  }
+
+  auto dust = dustBalance();
+  auto prevDust = m_lastNotifiedUnmixableBalance.exchange(dust);
+
+  if (prevDust != dust) {
+    m_observerManager.notify(&IWalletLegacyObserver::unmixableBalanceUpdated, dust);
   }
 
 }
