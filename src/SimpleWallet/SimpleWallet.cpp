@@ -1722,6 +1722,15 @@ void simple_wallet::synchronizationProgressUpdated(uint32_t current, uint32_t to
 bool simple_wallet::export_keys(const std::vector<std::string>& args/* = std::vector<std::string>()*/) {
   AccountKeys keys;
   m_wallet->getAccountKeys(keys);
+
+  m_consoleHandler.pause();
+  if (!pwd_container.read_and_validate()) {
+    std::cout << "Incorrect password!" << std::endl;
+    m_consoleHandler.unpause();
+    return false;
+  }
+  m_consoleHandler.unpause();
+
   std::cout << "Spend secret key: " << Common::podToHex(keys.spendSecretKey) << std::endl;
   std::cout << "View secret key: " << Common::podToHex(keys.viewSecretKey) << std::endl;
   std::cout << "Private keys: " << Tools::Base58::encode_addr(CryptoNote::parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX,
