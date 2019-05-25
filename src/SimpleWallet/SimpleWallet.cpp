@@ -2211,7 +2211,7 @@ bool simple_wallet::sign(const std::vector<std::string> &args) {
     return true;
   }
   std::string data = args[0];
-  std::string signature = m_wallet->sign(data);
+  std::string signature = m_wallet->sign_message(data);
   success_msg_writer() << signature;
   return true;
 }
@@ -2244,7 +2244,7 @@ bool simple_wallet::verify(const std::vector<std::string> &args) {
     fail_msg_writer() << ("Signature decoding error");
     return false;
   }
-  bool r = m_wallet->verify(data, address, signature);
+  bool r = m_wallet->verify_message(data, address, signature);
   if (!r) {
     fail_msg_writer() << "Invalid signature from " << address_string;
   } else {

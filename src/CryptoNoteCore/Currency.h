@@ -82,6 +82,8 @@ public:
 
   uint64_t minimumFee() const { return m_minimumFee; }
 
+  uint64_t getMinimalFee(uint64_t dailyDifficulty, uint64_t reward, uint64_t avgHistoricalDifficulty, uint64_t medianHistoricalReward, uint32_t height) const;
+
   uint64_t defaultDustThreshold() const { return m_defaultDustThreshold; }
 
   uint64_t difficultyTarget() const { return m_difficultyTarget; }
@@ -150,6 +152,8 @@ public:
   std::string formatAmount(uint64_t amount) const;
   std::string formatAmount(int64_t amount) const;
   bool parseAmount(const std::string& str, uint64_t& amount) const;
+
+  uint64_t roundUpMinFee(uint64_t minimalFee, int digits) const;
 
   Difficulty nextDifficulty(uint8_t blockMajorVersion, uint32_t blockIndex, std::vector<uint64_t> timestamps, std::vector<Difficulty> cumulativeDifficulties) const;
   Difficulty nextDifficultyV1(std::vector<uint64_t> timestamps, std::vector<Difficulty> cumulativeDifficulties) const;
