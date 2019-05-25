@@ -1522,6 +1522,10 @@ std::error_code Core::validateSemantic(const Transaction& transaction, uint64_t&
       return error::TransactionValidationError::OUTPUT_ZERO_AMOUNT;
     }
 
+    if (!is_valid_decomposed_amount(output.amount) && blockIndex >= CryptoNote::parameters::UPGRADE_HEIGHT_V5) {
+      return error::TransactionValidationError::OUTPUT_INVALID_DECOMPOSED_AMOUNT;
+    }
+
     if (output.target.type() == typeid(KeyOutput)) {
       if (!check_key(boost::get<KeyOutput>(output.target).key)) {
         return error::TransactionValidationError::OUTPUT_INVALID_KEY;
