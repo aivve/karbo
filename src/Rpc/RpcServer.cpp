@@ -1170,7 +1170,7 @@ bool RpcServer::on_validate_address(const COMMAND_RPC_VALIDATE_ADDRESS::request&
   return true;
 }
 
-bool RpcServer::on_get_block_by_height(const COMMAND_RPC_BLOCK_BY_HEIGHT::request& req, COMMAND_RPC_BLOCK_BY_HEIGHT::response& res) {
+bool RpcServer::on_get_block_by_height(const COMMAND_RPC_GET_BLOCK_DETAILS_BY_HEIGHT::request& req, COMMAND_RPC_GET_BLOCK_DETAILS_BY_HEIGHT::response& res) {
   if (m_core.getTopBlockIndex() < req.height) {
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_TOO_BIG_HEIGHT,
       std::string("Invalid height: ") + std::to_string(req.height) + ", current blockchain height = " + std::to_string(m_core.getTopBlockIndex()) };
