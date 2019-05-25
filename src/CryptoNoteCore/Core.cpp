@@ -1,4 +1,8 @@
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers, The Karbowanec developers
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2017, The Monero Project
+// Copyright (c) 2018, The Galaxia Project Developers
+// Copyright (c) 2018, The TurtleCoin Developers
+// Copyright (c) 2017-2019, The The Karbo Developers
 //
 // This file is part of Bytecoin.
 //
@@ -1181,7 +1185,7 @@ bool Core::getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, c
   // Fix by Jagerman
   if(height >= currency.timestampCheckWindow(b.majorVersion)) {
     std::vector<uint64_t> timestamps;
-    for(size_t offset = height - currency.timestampCheckWindow(b.majorVersion); offset < height; ++offset){
+    for(uint32_t offset = height - static_cast<uint32_t>(currency.timestampCheckWindow(b.majorVersion)); offset < height; ++offset){
       timestamps.push_back(getBlockTimestampByIndex(offset));
     }
     uint64_t median_ts = Common::medianValue(timestamps);
@@ -1415,6 +1419,11 @@ std::error_code Core::validateTransaction(const CachedTransaction& cachedTransac
 
         if (result == ExtractOutputKeysResult::OUTPUT_LOCKED) {
           return error::TransactionValidationError::INPUT_SPEND_LOCKED_OUT;
+        }
+
+        if (outputKeys.size() != cachedTransaction.getTransaction().signatures[inputIndex].size())
+        {
+          return error::TransactionValidationError::INPUT_INVALID_SIGNATURES_COUNT;
         }
 
         std::vector<const Crypto::PublicKey*> outputKeyPointers;
@@ -1664,6 +1673,11 @@ std::error_code Core::validateBlock(const CachedBlock& cachedBlock, IBlockchainC
 
   if (!(block.baseTransaction.unlockTime == previousBlockIndex + 1 + currency.minedMoneyUnlockWindow())) {
     return error::TransactionValidationError::WRONG_TRANSACTION_UNLOCK_TIME;
+  }
+
+  if (!block.baseTransaction.signatures.empty())
+  {
+    return error::TransactionValidationError::BASE_INVALID_SIGNATURES_COUNT;
   }
 
   for (const auto& output : block.baseTransaction.outputs) {
