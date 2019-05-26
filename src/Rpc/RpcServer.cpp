@@ -1536,7 +1536,7 @@ bool RpcServer::k_on_check_reserve_proof(const K_COMMAND_RPC_CHECK_RESERVE_PROOF
   for (size_t i = 0; i < proofs.size(); ++i) {
     const reserve_proof_entry& proof = proofs[i];
     Transaction tx;
-    if (!fromBinaryArray(tx, txs.front())) {
+    if (!fromBinaryArray(tx, txs[i])) {
       JsonRpc::JsonRpcError{
       CORE_RPC_ERROR_CODE_WRONG_PARAM, "Couldn't deserialize transaction" };
     }
