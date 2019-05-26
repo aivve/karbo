@@ -1609,10 +1609,7 @@ std::error_code Core::validateSemantic(const Transaction& transaction, uint64_t&
   assert(transaction.signatures.size() == transaction.inputs.size());
   fee = summaryInputAmount - summaryOutputAmount;
 
-
   CachedTransaction cachedTransaction(std::move(transaction));
-  auto transactionHash = cachedTransaction.getTransactionHash();
-
   bool isFusion = fee == 0 && currency.isFusionTransaction(transaction, cachedTransaction.getTransactionBinaryArray().size(), blockIndex);
   if (!isFusion && fee < CryptoNote::parameters::MINIMUM_FEE) {
     return error::TransactionValidationError::INVALID_FEE;
