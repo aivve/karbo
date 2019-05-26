@@ -822,6 +822,18 @@ bool BlockchainCache::isTransactionSpendTimeUnlocked(uint64_t unlockTime, uint32
     return blockIndex + currency.lockedTxAllowedDeltaBlocks() >= unlockTime;
   }
 
+  if (blockIndex >= CryptoNote::parameters::UPGRADE_HEIGHT_V5)
+  {
+    // Get the last block timestamp
+    const std::vector<uint64_t> lastBlockTimestamps = getLastTimestamps(1);
+
+    // Pop the last timestamp off the vector
+    const uint64_t lastBlockTimestamp = lastBlockTimestamps.at(0);
+
+    // Compare our delta seconds plus our last time stamp against the unlock time
+    return lastBlockTimestamp + currency.lockedTxAllowedDeltaSeconds() >= unlockTime;
+  }
+
   // interpret as time
   return static_cast<uint64_t>(time(nullptr)) + currency.lockedTxAllowedDeltaSeconds() >= unlockTime;
 }
