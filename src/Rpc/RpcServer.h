@@ -113,8 +113,6 @@ private:
   bool k_on_check_tx_proof(const K_COMMAND_RPC_CHECK_TX_PROOF::request& req, K_COMMAND_RPC_CHECK_TX_PROOF::response& res);
   bool on_validate_address(const COMMAND_RPC_VALIDATE_ADDRESS::request& req, COMMAND_RPC_VALIDATE_ADDRESS::response& res);
 
-  bool f_getMixin(const Transaction& transaction, uint64_t& mixin);
-
   Logging::LoggerRef logger;
   Core& m_core;
   NodeServer& m_p2p;

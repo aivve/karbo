@@ -24,7 +24,7 @@
 #include <boost/program_options.hpp>
 
 #include "Logging/ILogger.h"
-#include "SimpleWallet/PasswordContainer.cpp"
+#include "Common/PasswordContainer.cpp"
 
 namespace po = boost::program_options;
 
