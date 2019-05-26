@@ -2631,7 +2631,7 @@ uint64_t Core::get_current_blockchain_height() const {
 }
 
 bool Core::isKeyImageSpent(const Crypto::KeyImage& key_im) {
-  IBlockchainCache* cache = nullptr;
+  IBlockchainCache* cache = chainsLeaves[0];
   return cache->checkIfSpent(key_im);
 }
 
