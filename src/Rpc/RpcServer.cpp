@@ -1381,8 +1381,7 @@ bool RpcServer::k_on_check_tx_proof(const K_COMMAND_RPC_CHECK_TX_PROOF::request&
   }
   // parse pubkey r*A & signature
   const size_t header_len = strlen("ProofV1");
-  if (req.signature.size() < header_len || req.signature.substr(0, header_len) != "ProofV1")
-  {
+  if (req.signature.size() < header_len || req.signature.substr(0, header_len) != "ProofV1") {
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Signature header check error" };
   }
   Crypto::PublicKey rA;
@@ -1394,16 +1393,14 @@ bool RpcServer::k_on_check_tx_proof(const K_COMMAND_RPC_CHECK_TX_PROOF::request&
   if (!Tools::Base58::decode(req.signature.substr(header_len, rA_len), rA_decoded)) {
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Signature decoding error" };
   }
-  if (!Tools::Base58::decode(req.signature.substr(header_len + rA_len, sig_len), sig_decoded))
-  {
+  if (!Tools::Base58::decode(req.signature.substr(header_len + rA_len, sig_len), sig_decoded)) {
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Signature decoding error" };
   }
-  if (sizeof(Crypto::PublicKey) != rA_decoded.size() || sizeof(Crypto::Signature) != sig_decoded.size())
-  {
+  if (sizeof(Crypto::PublicKey) != rA_decoded.size() || sizeof(Crypto::Signature) != sig_decoded.size()) {
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Signature decoding error" };
   }
   memcpy(&rA, rA_decoded.data(), sizeof(Crypto::PublicKey));
-  memcpy(&sig, sig_decoded.data(), sizeof(Crypto::PublicKey));
+  memcpy(&sig, sig_decoded.data(), sizeof(Crypto::Signature));
 
   // fetch tx pubkey
   Transaction tx;
@@ -1426,6 +1423,7 @@ bool RpcServer::k_on_check_tx_proof(const K_COMMAND_RPC_CHECK_TX_PROOF::request&
       CORE_RPC_ERROR_CODE_WRONG_PARAM,
       "Couldn't find transaction with hash: " + req.tx_id + '.' };
   }
+
   CryptoNote::TransactionPrefix transaction = *static_cast<const TransactionPrefix*>(&tx);
 
   Crypto::PublicKey R = getTransactionPublicKeyFromExtra(transaction.extra);
