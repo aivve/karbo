@@ -157,10 +157,10 @@ void CryptoNoteProtocolHandler::set_p2p_endpoint(IP2pEndpoint* p2p) {
 }
 
 void CryptoNoteProtocolHandler::onConnectionOpened(CryptoNoteConnectionContext& context) {
-  //if (context.m_state != CryptoNoteConnectionContext::state_befor_handshake) {
-  //  m_peersCount++;
-  //  m_observerManager.notify(&ICryptoNoteProtocolObserver::peerCountUpdated, m_peersCount.load());
-  //}
+  if (context.m_state != CryptoNoteConnectionContext::state_befor_handshake) {
+    m_peersCount++;
+    m_observerManager.notify(&ICryptoNoteProtocolObserver::peerCountUpdated, m_peersCount.load());
+  }
 }
 
 void CryptoNoteProtocolHandler::onConnectionClosed(CryptoNoteConnectionContext& context) {
