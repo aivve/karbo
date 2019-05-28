@@ -286,7 +286,7 @@ bool Currency::constructMinerTx(uint8_t blockMajorVersion, uint32_t height, size
 
   tx.version = CURRENT_TRANSACTION_VERSION;
   //lock
-  tx.unlockTime = height + m_minedMoneyUnlockWindow;
+  tx.unlockTime = height + (height < CryptoNote::parameters::UPGRADE_HEIGHT_V5 ? m_minedMoneyUnlockWindow : m_minedMoneyUnlockWindow_v1);
   tx.inputs.push_back(in);
   return true;
 }
@@ -860,6 +860,7 @@ m_maxBlockBlobSize(currency.m_maxBlockBlobSize),
 m_maxTxSize(currency.m_maxTxSize),
 m_publicAddressBase58Prefix(currency.m_publicAddressBase58Prefix),
 m_minedMoneyUnlockWindow(currency.m_minedMoneyUnlockWindow),
+m_minedMoneyUnlockWindow_v1(currency.m_minedMoneyUnlockWindow_v1),
 m_timestampCheckWindow(currency.m_timestampCheckWindow),
 m_timestampCheckWindow_v1(currency.m_timestampCheckWindow_v1),
 m_blockFutureTimeLimit(currency.m_blockFutureTimeLimit),
@@ -916,6 +917,7 @@ CurrencyBuilder::CurrencyBuilder(Logging::ILogger& log) : m_currency(log) {
   maxTxSize(parameters::CRYPTONOTE_MAX_TX_SIZE);
   publicAddressBase58Prefix(parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX);
   minedMoneyUnlockWindow(parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW);
+  minedMoneyUnlockWindow_v1(parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1);
   transactionSpendableAge(parameters::CRYPTONOTE_TX_SPENDABLE_AGE);
 
   timestampCheckWindow(parameters::BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW);
