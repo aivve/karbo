@@ -91,7 +91,10 @@ bool Checkpoints::isAlternativeBlockAllowed(uint32_t  blockchainSize,
     return false;
   }
 
-  if (blockIndex < blockchainSize - CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW
+  if (blockIndex < blockchainSize - (blockchainSize <
+    CryptoNote::parameters::UPGRADE_HEIGHT_V5 ? 
+    CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW : 
+    CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1)
     && !isInCheckpointZone(blockIndex)) {
     logger(Logging::DEBUGGING, Logging::BRIGHT_WHITE)
       << "An attempt of too deep reorganization: "
