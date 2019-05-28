@@ -1,6 +1,7 @@
 add_definitions(-DSTATICLIB)
 
 include_directories(${CMAKE_SOURCE_DIR}/external/rocksdb/include)
+include_directories(${CMAKE_SOURCE_DIR}/external/argon2/include)
 include_directories(${CMAKE_SOURCE_DIR}/external/linenoise)
 
 file(GLOB_RECURSE BlockchainExplorer BlockchainExplorer/*)
@@ -75,6 +76,9 @@ add_executable(ConnectivityTool ${ConnectivityTool})
 add_executable(Miner ${Miner})
 add_executable(GreenWallet ${GreenWallet})
 endif()
+
+target_link_libraries(Crypto argon2)
+target_link_libraries(CryptoNoteCore argon2)
 
 if (MSVC)
   target_link_libraries(System ws2_32)
