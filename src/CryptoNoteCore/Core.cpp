@@ -561,6 +561,109 @@ std::vector<Crypto::Hash> Core::findBlockchainSupplement(const std::vector<Crypt
   return getBlockHashes(startBlockIndex, static_cast<uint32_t>(maxCount));
 }
 
+void fillHeights(const void* seed, size_t seedSize, uint64_t maxHeight, std::vector<uint64_t>& heights, size_t heightCount)
+{
+  heights.clear();
+
+  const size_t c_nHashSize = 32;
+  uint8_t abtDerived[c_nHashSize];
+  assert(seedSize == c_nHashSize);
+  std::copy_n((const uint8_t*)seed, c_nHashSize, abtDerived);
+
+  const size_t nWordCount = c_nHashSize / sizeof(uint64_t);
+
+  while (true)
+  {
+    Crypto::cn_fast_hash(abtDerived, c_nHashSize, (char*)abtDerived);
+    for (int nWord = 0; nWord < nWordCount; ++nWord)
+    {
+      if (heightCount-- <= 0)
+        return;
+
+      uint64_t nData = 0;
+      for (int nByte = 0; nByte < sizeof(uint64_t); ++nByte)
+      {
+        nData <<= 8;
+        nData += abtDerived[nWord * sizeof(uint64_t) + nByte];
+      };
+
+      uint64_t nHeight = nData % maxHeight;
+      heights.push_back(nHeight);
+    }
+  }
+}
+
+bool Core::checkProofOfWork(Crypto::cn_context& context, const CachedBlock& block, Difficulty currentDifficulty) {
+  if (block.getBlock().majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    return currency.checkProofOfWork(context, block, currentDifficulty);
+  }
+
+  Crypto::Hash proofOfWork;
+
+  if (!getBlockLongHash(context, block, proofOfWork)) {
+    return false;
+  }
+
+  if (!check_hash(proofOfWork, currentDifficulty)) {
+    return false;
+  }
+
+  return true;
+}
+
+bool Core::getBlockLongHash(Crypto::cn_context &context, const CachedBlock& b, Crypto::Hash& res) {
+  if (b.getBlock().majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    return false;
+  }
+
+  BinaryArray pot, blockBinaryArray = b.getBlockHashingBinaryArray();
+
+  // Phase 1
+
+  Crypto::Hash hash_1, hash_2;
+
+  // Hashing the current blockdata (preprocessing it)
+  cn_fast_hash(blockBinaryArray.data(), blockBinaryArray.size(), hash_1);
+
+  // Phase 2
+
+  // throw our block into common pot
+  pot.insert(std::end(pot), std::begin(blockBinaryArray), std::end(blockBinaryArray));
+
+  // Get the corresponding 32 blocks from blockchain based on preparatory hash_1
+  // and throw them into the pot too
+  auto mainChain = chainsLeaves[0];
+  uint32_t currentHeight = boost::get<BaseInput>(b.getBlock().baseTransaction.inputs[0]).blockIndex;
+  uint32_t maxHeight = std::min<uint32_t>(get_current_blockchain_height(), currentHeight - 1 - currency.minedMoneyUnlockWindow_v1());
+  std::vector<uint64_t> heights;
+
+  fillHeights(hash_1.data, sizeof(hash_1), maxHeight, heights, 32);
+
+  for (size_t i = 0; i < 32; ++i) {
+    RawBlock rawBlock = mainChain->getBlockByIndex(static_cast<uint32_t>(heights[i]));
+    BlockTemplate blockTemplate = extractBlockTemplate(rawBlock);
+
+    BinaryArray ba;
+    if (!toBinaryArray(blockTemplate, ba)) {
+      return false;
+    }
+    pot.insert(std::end(pot), std::begin(ba), std::end(ba));
+  }
+
+  // Phase 3
+
+  uint32_t m_cost = 1024;
+  uint32_t lanes = 2;
+  uint32_t t_cost = 2;
+
+  // stir the pot - hashing the 1 + 32 blocks as one continuous data, salt is hash_1
+  Crypto::argon2d_hash(pot.data(), pot.size(), hash_1.data, sizeof(hash_1), m_cost, lanes, t_cost, hash_2);
+
+  res = hash_2;
+
+  return true;
+}
+
 // Calculate ln(p) of Poisson distribution
 // Original idea : https://stackoverflow.com/questions/30156803/implementing-poisson-distribution-in-c
 // Using logarithms avoids dealing with very large (k!) and very small (p < 10^-44) numbers

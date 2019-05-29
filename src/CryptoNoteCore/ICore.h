@@ -116,5 +116,7 @@ public:
   virtual uint64_t getMinimalFeeForHeight(uint32_t height) = 0;
   virtual uint64_t getMinimalFee() = 0;
   virtual bool getMixin(const Transaction& transaction, uint64_t& mixin) = 0;
+
+  virtual bool checkProofOfWork(Crypto::cn_context& context, const CachedBlock& block, Difficulty currentDifficulty) = 0;
 };
 }
