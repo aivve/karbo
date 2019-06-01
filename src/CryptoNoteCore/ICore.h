@@ -118,5 +118,7 @@ public:
   virtual bool getMixin(const Transaction& transaction, uint64_t& mixin) = 0;
 
   virtual bool checkProofOfWork(Crypto::cn_context& context, const CachedBlock& block, Difficulty currentDifficulty) = 0;
+  virtual bool getBlockLongHash(Crypto::cn_context &context, const BlockTemplate& b, Crypto::Hash& res) = 0;
+
 };
 }

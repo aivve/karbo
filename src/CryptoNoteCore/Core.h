@@ -37,12 +37,14 @@
 #include "MessageQueue.h"
 #include "TransactionValidatiorState.h"
 #include "SwappedVector.h"
-
+#include "CryptoNoteCore/IMinerHandler.h"
 #include "CryptoNoteCore/MinerConfig.h"
 
 #include <System/ContextGroup.h>
 
 namespace CryptoNote {
+
+class miner;
 
 class Core : public ICore, public ICoreInformation {
 public:
@@ -99,6 +101,7 @@ public:
   //IMinerHandler
   virtual bool handleBlockFound(BlockTemplate& b); //override;
   virtual bool getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, const BinaryArray& extraNonce, Difficulty& difficulty, uint32_t& height) const override;
+  virtual bool getBlockLongHash(Crypto::cn_context &context, const BlockTemplate& b, Crypto::Hash& res) override;
 
   virtual CoreStatistics getCoreStatistics() const override;
   
@@ -152,6 +155,7 @@ private:
   std::vector<IBlockchainCache*> chainsLeaves;
   std::unique_ptr<ITransactionPoolCleanWrapper> transactionPool;
   std::unordered_set<IBlockchainCache*> mainChainSet;
+  std::unique_ptr<miner> m_miner;
 
   std::string dataFolder;
 
@@ -173,6 +177,8 @@ private:
   std::error_code validateFee(const Transaction& transaction, uint32_t blockIndex);
 
   bool check_tx_inputs_keyimages_diff(const Transaction& tx);
+  bool update_miner_block_template();
+  bool on_update_blocktemplate_interval();
 
   uint32_t findBlockchainSupplement(const std::vector<Crypto::Hash>& remoteBlockIds) const;
   std::vector<Crypto::Hash> getBlockHashes(uint32_t startBlockIndex, uint32_t maxCount) const;
