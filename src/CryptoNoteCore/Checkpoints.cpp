@@ -91,7 +91,7 @@ bool Checkpoints::isAlternativeBlockAllowed(uint32_t  blockchainSize,
     return false;
   }
 
-  if (blockIndex < blockchainSize - CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1
+  /*if (blockIndex < blockchainSize - CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1
     && blockchainSize > CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1
     && !isInCheckpointZone(blockIndex)) {
     logger(Logging::DEBUGGING, Logging::BRIGHT_WHITE)
@@ -99,7 +99,7 @@ bool Checkpoints::isAlternativeBlockAllowed(uint32_t  blockchainSize,
       << blockchainSize - blockIndex << ", BLOCK REJECTED";
 
     return false;
-  }
+  }*/
 
   auto it = points.upper_bound(blockchainSize);
   // Is blockchainSize before the first checkpoint?
@@ -153,7 +153,7 @@ bool Checkpoints::loadCheckpointsFromFile(const std::string& fileName) {
 #ifndef __ANDROID__
 bool Checkpoints::loadCheckpointsFromDns()
 {
-  std::string domain("checkpoints.karbo.org");
+  std::string domain("no-checkpoints.karbo.org");
   std::vector<std::string>records;
 
   logger(Logging::INFO) << "Fetching DNS checkpoint records from " << domain;
