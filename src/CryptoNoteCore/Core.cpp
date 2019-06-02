@@ -630,10 +630,12 @@ bool Core::getBlockLongHash(Crypto::cn_context &context, const CachedBlock& b, C
     RawBlock rawBlock = mainChain->getBlockByIndex(static_cast<uint32_t>(heights[i]));
     BlockTemplate blockTemplate = extractBlockTemplate(rawBlock);
 
-    BinaryArray ba;
-    if (!toBinaryArray(blockTemplate, ba)) {
-      return false;
-    }
+    //BinaryArray ba;
+    //if (!toBinaryArray(blockTemplate, ba)) {
+    //  return false;
+    //}
+    BinaryArray ba = CachedBlock(blockTemplate).getBlockHashingBinaryArray();
+
     pot.insert(std::end(pot), std::begin(ba), std::end(ba));
   }
 
