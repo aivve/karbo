@@ -24,7 +24,7 @@ namespace CryptoNote {
   struct IMinerHandler {
     virtual bool handleBlockFound(BlockTemplate& b) = 0;
     virtual bool getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, Difficulty& diffic, uint32_t& height, const BinaryArray& ex_nonce) = 0;
-    virtual bool getBlockLongHash(Crypto::cn_context &context, const BlockTemplate& b, Crypto::Hash& res) = 0;
+    virtual bool getBlockLongHash(Crypto::cn_context &context, const CachedBlock& block, Crypto::Hash& res) = 0;
 
   protected:
     ~IMinerHandler() {}

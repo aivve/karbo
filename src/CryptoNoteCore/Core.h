@@ -44,7 +44,7 @@
 
 namespace CryptoNote {
 
-class miner;
+//class miner;
 
 class Core : public ICore, public ICoreInformation {
 public:
@@ -101,7 +101,6 @@ public:
   //IMinerHandler
   virtual bool handleBlockFound(BlockTemplate& b); //override;
   virtual bool getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, const BinaryArray& extraNonce, Difficulty& difficulty, uint32_t& height) const override;
-  virtual bool getBlockLongHash(Crypto::cn_context &context, const BlockTemplate& b, Crypto::Hash& res) override;
 
   virtual CoreStatistics getCoreStatistics() const override;
   
@@ -141,7 +140,7 @@ public:
   bool isKeyImageSpent(const Crypto::KeyImage& key_im);
 
   virtual bool checkProofOfWork(Crypto::cn_context& context, const CachedBlock& block, Difficulty currentDifficulty) override;
-  bool getBlockLongHash(Crypto::cn_context &context, const CachedBlock& b, Crypto::Hash& res);
+  virtual bool getBlockLongHash(Crypto::cn_context &context, const CachedBlock& b, Crypto::Hash& res) override;
 
 private:
   const Currency& currency;
@@ -155,7 +154,7 @@ private:
   std::vector<IBlockchainCache*> chainsLeaves;
   std::unique_ptr<ITransactionPoolCleanWrapper> transactionPool;
   std::unordered_set<IBlockchainCache*> mainChainSet;
-  std::unique_ptr<miner> m_miner;
+  // std::unique_ptr<miner> m_miner;
 
   std::string dataFolder;
 
