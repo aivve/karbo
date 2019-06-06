@@ -1018,7 +1018,7 @@ bool RpcServer::on_getblockhash(const COMMAND_RPC_GETBLOCKHASH::request& req, CO
     };
   }
 
-  res = Common::podToHex(blockId);
+  res.emplace_back(Common::podToHex(blockId));
   return true;
 }
 

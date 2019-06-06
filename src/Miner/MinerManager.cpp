@@ -28,6 +28,7 @@
 #include "CryptoNoteCore/CryptoNoteFormatUtils.h"
 #include "CryptoNoteCore/TransactionExtra.h"
 #include "Serialization/SerializationOverloads.h"
+#include "Serialization/SerializationTools.h"
 #include "Rpc/HttpClient.h"
 #include "Rpc/CoreRpcServerCommandsDefinitions.h"
 #include "Rpc/JsonRpc.h"
@@ -265,7 +266,7 @@ Crypto::Hash MinerManager::requestBlockHashAtHeight(const std::string& daemonHos
     HttpClient client(m_dispatcher, daemonHost, daemonPort);
 
     COMMAND_RPC_GETBLOCKHASH::request request;
-    request.emplace_back(static_cast<uint64_t>(height));
+    request.emplace_back(height);
 
     COMMAND_RPC_GETBLOCKHASH::response response;
 
@@ -274,7 +275,9 @@ Crypto::Hash MinerManager::requestBlockHashAtHeight(const std::string& daemonHos
 
     Crypto::Hash blockId = NULL_HASH;
     
-    if (!Common::podFromHex(response, blockId)) {
+    std::string hash_str = response[0];
+
+    if (!Common::podFromHex(hash_str, blockId)) {
       throw std::runtime_error("Couldn't parse block hash");
     }
 

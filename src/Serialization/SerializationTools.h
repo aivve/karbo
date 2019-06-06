@@ -25,7 +25,7 @@
 #include "JsonOutputStreamSerializer.h"
 #include "KVBinaryInputStreamSerializer.h"
 #include "KVBinaryOutputStreamSerializer.h"
-#include "GreenWallet/Types.h"
+#include "../GreenWallet/Types.h"
 
 namespace Common {
 
@@ -40,6 +40,9 @@ inline std::string getValueAs<std::string>(const JsonValue& js) { return js.getS
 
 template <>
 inline uint64_t getValueAs<uint64_t>(const JsonValue& js) { return static_cast<uint64_t>(js.getInteger()); }
+
+template <>
+inline int64_t getValueAs<int64_t>(const JsonValue& js) { return static_cast<int64_t>(js.getInteger()); }
 
 }
 
