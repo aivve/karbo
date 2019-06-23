@@ -574,19 +574,19 @@ bool Core::getBlockLongHash(Crypto::cn_context &context, const CachedBlock& b, C
     return true;
   }
 
-  BinaryArray pot, blockBinaryArray = b.getBlockHashingBinaryArray();
+  BinaryArray pot, bd = b.getBlockHashingBinaryArray();
 
   // Phase 1
 
   Crypto::Hash hash_1, hash_2;
 
   // Hashing the current blockdata (preprocessing it)
-  cn_fast_hash(blockBinaryArray.data(), blockBinaryArray.size(), hash_1);
+  cn_fast_hash(bd.data(), bd.size(), hash_1);
 
   // Phase 2
 
   // throw our block into common pot
-  pot.insert(std::end(pot), std::begin(blockBinaryArray), std::end(blockBinaryArray));
+  pot.insert(std::end(pot), std::begin(bd), std::end(bd));
 
   // Get the corresponding 8 blocks from blockchain based on preparatory hash_1
   // and throw them into the pot too
@@ -602,9 +602,9 @@ bool Core::getBlockLongHash(Crypto::cn_context &context, const CachedBlock& b, C
     };
 
     uint32_t n = (chunk[0] << 24) |
-      (chunk[1] << 16) |
-      (chunk[2] << 8) |
-      (chunk[3]);
+                 (chunk[1] << 16) |
+                 (chunk[2] << 8)  |
+                 (chunk[3]);
 
     uint32_t height_i = n % maxHeight;
     RawBlock rawBlock = cache->getBlockByIndex(height_i);
@@ -747,7 +747,7 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
       logger(Logging::WARNING) << "Checkpoint block hash mismatch for block " << cachedBlock.getBlockHash();
       return error::BlockValidationError::CHECKPOINT_BLOCK_HASH_MISMATCH;
     }
-  } else if (!currency.checkProofOfWork(cryptoContext, cachedBlock, currentDifficulty)) {
+  } else if (!checkProofOfWork(cryptoContext, cachedBlock, currentDifficulty)) {
     logger(Logging::WARNING) << "Proof of work too weak for block " << cachedBlock.getBlockHash();
     return error::BlockValidationError::PROOF_OF_WORK_TOO_WEAK;
   }
