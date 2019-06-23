@@ -570,7 +570,8 @@ bool Core::checkProofOfWork(Crypto::cn_context& context, const CachedBlock& bloc
 
 bool Core::getBlockLongHash(Crypto::cn_context &context, const CachedBlock& b, Crypto::Hash& res) {
   if (b.getBlock().majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
-    return false;
+    res = b.getBlockLongHash(context);
+    return true;
   }
 
   BinaryArray pot, blockBinaryArray = b.getBlockHashingBinaryArray();
