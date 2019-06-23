@@ -590,9 +590,8 @@ bool Core::getBlockLongHash(Crypto::cn_context &context, const CachedBlock& b, C
 
   // Get the corresponding 8 blocks from blockchain based on preparatory hash_1
   // and throw them into the pot too
-  auto mainChain = chainsLeaves[0];
-  uint32_t currentHeight = boost::get<BaseInput>(b.getBlock().baseTransaction.inputs[0]).blockIndex;
-  uint32_t maxHeight = std::min<uint32_t>(get_current_blockchain_height(), currentHeight - 1 - currency.minedMoneyUnlockWindow_v1());
+  auto cache = findSegmentContainingBlock(b.getBlock().previousBlockHash);
+  uint32_t maxHeight = std::min<uint32_t>(get_current_blockchain_height(), b.getBlockIndex() - 1 - currency.minedMoneyUnlockWindow_v1());
 
   for (uint8_t i = 1; i <= 8; i++) {
     uint8_t chunk[4] = {
@@ -608,7 +607,7 @@ bool Core::getBlockLongHash(Crypto::cn_context &context, const CachedBlock& b, C
       (chunk[3]);
 
     uint32_t height_i = n % maxHeight;
-    RawBlock rawBlock = mainChain->getBlockByIndex(height_i);
+    RawBlock rawBlock = cache->getBlockByIndex(height_i);
     BlockTemplate blockTemplate = extractBlockTemplate(rawBlock);
     BinaryArray ba = CachedBlock(blockTemplate).getBlockHashingBinaryArray();
 
