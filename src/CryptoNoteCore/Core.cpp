@@ -550,38 +550,6 @@ std::vector<Crypto::Hash> Core::findBlockchainSupplement(const std::vector<Crypt
   return getBlockHashes(startBlockIndex, static_cast<uint32_t>(maxCount));
 }
 
-void fillHeights(const void* seed, size_t seedSize, uint64_t maxHeight, std::vector<uint64_t>& heights, size_t heightCount)
-{
-  heights.clear();
-
-  const size_t c_nHashSize = 32;
-  uint8_t abtDerived[c_nHashSize];
-  assert(seedSize == c_nHashSize);
-  std::copy_n((const uint8_t*)seed, c_nHashSize, abtDerived);
-
-  const size_t nWordCount = c_nHashSize / sizeof(uint64_t);
-
-  while (true)
-  {
-    Crypto::cn_fast_hash(abtDerived, c_nHashSize, (char*)abtDerived);
-    for (int nWord = 0; nWord < nWordCount; ++nWord)
-    {
-      if (heightCount-- <= 0)
-        return;
-
-      uint64_t nData = 0;
-      for (int nByte = 0; nByte < sizeof(uint64_t); ++nByte)
-      {
-        nData <<= 8;
-        nData += abtDerived[nWord * sizeof(uint64_t) + nByte];
-      };
-
-      uint64_t nHeight = nData % maxHeight;
-      heights.push_back(nHeight);
-    }
-  }
-}
-
 bool Core::checkProofOfWork(Crypto::cn_context& context, const CachedBlock& block, Difficulty currentDifficulty) {
   if (block.getBlock().majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
     return currency.checkProofOfWork(context, block, currentDifficulty);
@@ -619,23 +587,28 @@ bool Core::getBlockLongHash(Crypto::cn_context &context, const CachedBlock& b, C
   // throw our block into common pot
   pot.insert(std::end(pot), std::begin(blockBinaryArray), std::end(blockBinaryArray));
 
-  // Get the corresponding 32 blocks from blockchain based on preparatory hash_1
+  // Get the corresponding 8 blocks from blockchain based on preparatory hash_1
   // and throw them into the pot too
   auto mainChain = chainsLeaves[0];
   uint32_t currentHeight = boost::get<BaseInput>(b.getBlock().baseTransaction.inputs[0]).blockIndex;
   uint32_t maxHeight = std::min<uint32_t>(get_current_blockchain_height(), currentHeight - 1 - currency.minedMoneyUnlockWindow_v1());
-  std::vector<uint64_t> heights;
 
-  fillHeights(hash_1.data, sizeof(hash_1), maxHeight, heights, 32);
+  for (uint8_t i = 1; i <= 8; i++) {
+    uint8_t chunk[4] = {
+      hash_1.data[i * 4 - 4],
+      hash_1.data[i * 4 - 3],
+      hash_1.data[i * 4 - 2],
+      hash_1.data[i * 4 - 1]
+    };
 
-  for (size_t i = 0; i < 32; ++i) {
-    RawBlock rawBlock = mainChain->getBlockByIndex(static_cast<uint32_t>(heights[i]));
+    uint32_t n = (chunk[0] << 24) |
+      (chunk[1] << 16) |
+      (chunk[2] << 8) |
+      (chunk[3]);
+
+    uint32_t height_i = n % maxHeight;
+    RawBlock rawBlock = mainChain->getBlockByIndex(height_i);
     BlockTemplate blockTemplate = extractBlockTemplate(rawBlock);
-
-    //BinaryArray ba;
-    //if (!toBinaryArray(blockTemplate, ba)) {
-    //  return false;
-    //}
     BinaryArray ba = CachedBlock(blockTemplate).getBlockHashingBinaryArray();
 
     pot.insert(std::end(pot), std::begin(ba), std::end(ba));
@@ -643,12 +616,8 @@ bool Core::getBlockLongHash(Crypto::cn_context &context, const CachedBlock& b, C
 
   // Phase 3
 
-  uint32_t m_cost = 1024;
-  uint32_t lanes = 2;
-  uint32_t t_cost = 2;
-
-  // stir the pot - hashing the 1 + 32 blocks as one continuous data, salt is hash_1
-  Crypto::argon2d_hash(pot.data(), pot.size(), hash_1.data, sizeof(hash_1), m_cost, lanes, t_cost, hash_2);
+  // stir the pot - hashing the 1 + 8 blocks as one continuous data, salt is hash_1
+  Crypto::balloon_hash(pot.data(), hash_2, pot.size(), hash_1.data, sizeof(hash_1));
 
   res = hash_2;
 
