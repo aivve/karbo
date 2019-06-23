@@ -1774,7 +1774,7 @@ std::error_code Core::validateBlock(const CachedBlock& cachedBlock, IBlockchainC
     return error::TransactionValidationError::BASE_INPUT_WRONG_BLOCK_INDEX;
   }
 
-  if (!(block.baseTransaction.unlockTime == previousBlockIndex + 1 + (previousBlockIndex > currency.upgradeHeightV5() ? currency.minedMoneyUnlockWindow_v1() : currency.minedMoneyUnlockWindow()))) {
+  if (!(block.baseTransaction.unlockTime == previousBlockIndex + 1 + (block.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5 ? currency.minedMoneyUnlockWindow() : currency.minedMoneyUnlockWindow_v1()))) {
     return error::TransactionValidationError::WRONG_TRANSACTION_UNLOCK_TIME;
   }
 
