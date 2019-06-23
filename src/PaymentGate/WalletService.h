@@ -2,20 +2,20 @@
 // Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2016-2019 The Karbo developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
@@ -87,6 +87,8 @@ public:
   std::error_code getTransactions(const std::vector<std::string>& addresses, uint32_t firstBlockIndex,
     uint32_t blockCount, const std::string& paymentId, std::vector<TransactionsInBlockRpcInfo>& transactionHashes);
   std::error_code getTransaction(const std::string& transactionHash, TransactionRpcInfo& transaction);
+  std::error_code getTransactionSecretKey(const std::string& transactionHash, std::string& transactionSecretKey);
+  std::error_code getTransactionProof(const std::string& transactionHash, const std::string& destinationAddress, const std::string& transactionSecretKey, std::string& transactionProof);
   std::error_code getAddresses(std::vector<std::string>& addresses);
   std::error_code sendTransaction(const SendTransaction::Request& request, std::string& transactionHash, std::string& transactionSecretKey);
   std::error_code createDelayedTransaction(const CreateDelayedTransaction::Request& request, std::string& transactionHash);
@@ -99,6 +101,7 @@ public:
     const std::string& destinationAddress, std::string& transactionHash);
   std::error_code estimateFusion(uint64_t threshold, const std::vector<std::string>& addresses, uint32_t& fusionReadyCount, uint32_t& totalOutputCount);
   std::error_code validateAddress(const std::string& address, bool& isvalid, std::string& _address, std::string& spendPublicKey, std::string& viewPublicKey);
+  std::error_code getReserveProof(std::string& reserveProof, const std::string& address, const std::string& message, const uint64_t& amount = 0);
 
 private:
   void refresh();

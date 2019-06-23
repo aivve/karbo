@@ -2,20 +2,20 @@
 // Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2018-2019 The Karbo developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
@@ -326,6 +326,52 @@ struct GetUnconfirmedTransactionHashes {
 
   struct Response {
     std::vector<std::string> transactionHashes;
+
+    void serialize(CryptoNote::ISerializer& serializer);
+  };
+};
+
+struct GetTransactionSecretKey {
+  struct Request {
+    std::string transactionHash;
+
+    void serialize(CryptoNote::ISerializer& serializer);
+  };
+
+  struct Response {
+    std::string transactionSecretKey;
+
+    void serialize(CryptoNote::ISerializer& serializer);
+  };
+};
+
+struct GetTransactionProof {
+  struct Request {
+    std::string transactionHash;
+    std::string destinationAddress;
+    std::string transactionSecretKey;
+
+    void serialize(CryptoNote::ISerializer& serializer);
+  };
+
+  struct Response {
+    std::string transactionProof;
+
+    void serialize(CryptoNote::ISerializer& serializer);
+  };
+};
+
+struct GetReserveProof {
+  struct Request {
+    std::string address;
+    std::string message;
+    uint64_t amount = 0;
+
+    void serialize(CryptoNote::ISerializer& serializer);
+  };
+
+  struct Response {
+    std::string reserveProof;
 
     void serialize(CryptoNote::ISerializer& serializer);
   };

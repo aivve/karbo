@@ -2,20 +2,20 @@
 // Copyright (c) 2018-2019, The TurtleCoin Developers
 // Copyright (c) 2018-2019, The Karbo Developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "BlockchainCache.h"
 
@@ -403,6 +403,21 @@ std::vector<Crypto::Hash> BlockchainCache::getTransactionHashes() const {
     // skip base transaction
     if (tx.transactionIndex != 0) {
 		hashes.push_back(tx.transactionHash);
+    }
+  }
+  return hashes;
+}
+
+std::vector<Crypto::Hash> BlockchainCache::getTransactionHashes(uint32_t startIndex, uint32_t endIndex) const {
+  auto& txInfos = transactions.get<TransactionHashTag>();
+  std::vector<Crypto::Hash> hashes;
+  for (auto& tx : txInfos) {
+    // skip transactions not in range
+    if (tx.blockIndex < startIndex || tx.blockIndex > endIndex)
+      continue;
+    // skip base transaction
+    if (tx.transactionIndex != 0) {
+      hashes.push_back(tx.transactionHash);
     }
   }
   return hashes;

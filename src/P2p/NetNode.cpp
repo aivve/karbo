@@ -2,20 +2,20 @@
 // Copyright (c) 2018-2019, The TurtleCoin Developers
 // Copyright (c) 2018-2019, The Karbo Developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "NetNode.h"
 
@@ -828,8 +828,26 @@ std::string print_peerlist_to_string(const std::list<PeerlistEntry>& pl) {
     }
     return false;
   }
-
   //-----------------------------------------------------------------------------------
+  bool NodeServer::connect_to_seed()
+  {
+      size_t try_count = 0;
+      size_t current_index = Crypto::rand<size_t>() % m_seed_nodes.size();
+      
+      while(true) {
+        if(try_to_connect_and_handshake_with_new_peer(m_seed_nodes[current_index], true))
+          break;
+
+        if(++try_count > m_seed_nodes.size()) {
+          logger(ERROR) << "Failed to connect to any of seed peers, continuing without seeds";
+          break;
+        }
+        if(++current_index >= m_seed_nodes.size())
+          current_index = 0;
+      }
+      
+      return true;
+  }
   bool NodeServer::connections_maker()
   {
     if (!connect_to_peerlist(m_exclusive_peers)) {
@@ -840,21 +858,10 @@ std::string print_peerlist_to_string(const std::list<PeerlistEntry>& pl) {
       return true;
     }
 
-    if (!m_peerlist.get_white_peers_count() && m_seed_nodes.size()) {
-      size_t try_count = 0;
-      size_t current_index = Crypto::rand<size_t>() % m_seed_nodes.size();
-
-      while (true) {
-        if (try_to_connect_and_handshake_with_new_peer(m_seed_nodes[current_index], true))
-          break;
-
-        if (++try_count > m_seed_nodes.size()) {
-          logger(ERROR) << "Failed to connect to any of seed peers, continuing without seeds";
-          break;
-        }
-        if (++current_index >= m_seed_nodes.size())
-          current_index = 0;
-      }
+    size_t start_conn_count = get_outgoing_connections_count();
+    if(!m_peerlist.get_white_peers_count() && m_seed_nodes.size()) {
+      if (!connect_to_seed())
+        return false;
     }
 
     if (!connect_to_peerlist(m_priority_peers)) return false;
@@ -862,32 +869,38 @@ std::string print_peerlist_to_string(const std::list<PeerlistEntry>& pl) {
     size_t expected_white_connections = (m_config.m_net_config.connections_count * CryptoNote::P2P_DEFAULT_WHITELIST_CONNECTIONS_PERCENT) / 100;
 
     size_t conn_count = get_outgoing_connections_count();
-    if (conn_count < m_config.m_net_config.connections_count)
+    if(conn_count < m_config.m_net_config.connections_count)
     {
-      if (conn_count < expected_white_connections)
+      if(conn_count < expected_white_connections)
       {
         //start from white list
-        if (!make_expected_connections_count(true, expected_white_connections))
+        if(!make_expected_connections_count(true, expected_white_connections))
           return false;
         //and then do grey list
-        if (!make_expected_connections_count(false, m_config.m_net_config.connections_count))
+        if(!make_expected_connections_count(false, m_config.m_net_config.connections_count))
           return false;
-      }
-      else
+      }else
       {
         //start from grey list
-        if (!make_expected_connections_count(false, m_config.m_net_config.connections_count))
+        if(!make_expected_connections_count(false, m_config.m_net_config.connections_count))
           return false;
         //and then do white list
-        if (!make_expected_connections_count(true, m_config.m_net_config.connections_count))
+        if(!make_expected_connections_count(true, m_config.m_net_config.connections_count))
           return false;
       }
     }
 
+    if (start_conn_count == get_outgoing_connections_count() && start_conn_count < m_config.m_net_config.connections_count && m_seed_nodes.size())
+    {
+      logger(Logging::INFO) << "Failed to connect to any peers, trying seeds";
+      if (!connect_to_seed())
+        return false;
+    }
+
     return true;
   }
-
   //-----------------------------------------------------------------------------------
+  
   bool NodeServer::make_expected_connections_count(bool white_list, size_t expected_connections)
   {
     size_t conn_count = get_outgoing_connections_count();

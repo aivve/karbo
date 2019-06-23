@@ -1,19 +1,20 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2016-2019, The Karbo developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "DaemonCommandsHandler.h"
 
@@ -260,14 +261,14 @@ bool DaemonCommandsHandler::set_log(const std::vector<std::string>& args)
 //--------------------------------------------------------------------------------
 bool DaemonCommandsHandler::print_block_by_height(uint32_t height)
 {
-  if (height - 1 > m_core.getTopBlockIndex()) {
-    std::cout << "block wasn't found. Current block chain height: " << m_core.getTopBlockIndex() + 1 << ", requested: " << height << std::endl;
+  if (height > m_core.getTopBlockIndex()) {
+    std::cout << "block wasn't found. Current block chain top block index is: " << m_core.getTopBlockIndex() << ", requested: " << height << std::endl;
     return false;
   }
 
-  auto hash = m_core.getBlockHashByIndex(height - 1);
+  auto hash = m_core.getBlockHashByIndex(height);
   std::cout << "block_id: " << hash << ENDL;
-  print_as_json(m_core.getBlockByIndex(height - 1));
+  print_as_json(m_core.getBlockByIndex(height));
 
   return true;
 }

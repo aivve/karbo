@@ -1,19 +1,20 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2016-2019, The Karbo developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 #include <vector>
@@ -117,8 +118,11 @@ public:
   virtual uint64_t getMinimalFee() = 0;
   virtual bool getMixin(const Transaction& transaction, uint64_t& mixin) = 0;
 
-  virtual bool checkProofOfWork(Crypto::cn_context& context, const CachedBlock& block, Difficulty currentDifficulty) = 0;
-  virtual bool getBlockLongHash(Crypto::cn_context &context, const CachedBlock& block, Crypto::Hash& res) = 0;
+  virtual size_t getPoolTransactionCount() const = 0;
+  virtual size_t getBlockchainTransactionCount() const = 0;
+  virtual size_t getAlternativeBlockCount() const = 0;
+  virtual uint64_t getTotalGeneratedAmount() const = 0;
+  virtual uint32_t get_current_blockchain_height() const = 0;
 
 };
 }

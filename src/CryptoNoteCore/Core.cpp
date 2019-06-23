@@ -4,20 +4,20 @@
 // Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2017-2019, The The Karbo Developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <algorithm>
 #include <numeric>
@@ -314,10 +314,12 @@ BlockTemplate Core::getBlockByHash(const Crypto::Hash& blockHash) const {
   assert(!chainsLeaves.empty());
 
   throwIfNotInitialized();
-  IBlockchainCache* segment =
-      findMainChainSegmentContainingBlock(blockHash); // TODO should it be requested from the main chain?
+  IBlockchainCache* segment = findMainChainSegmentContainingBlock(blockHash);
   if (segment == nullptr) {
-    throw std::runtime_error("Requested hash wasn't found in main blockchain");
+    segment = findAlternativeSegmentContainingBlock(blockHash);
+    if (segment == nullptr) {
+      throw std::runtime_error("Requested hash wasn't found");
+    }
   }
 
   uint32_t blockIndex = segment->getBlockIndex(blockHash);
@@ -813,7 +815,23 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
 
         if (cache->getCurrentCumulativeDifficulty() > mainChainCache->getCurrentCumulativeDifficulty()) {
           int64_t reorgSize = cache->getTopBlockIndex() - cache->getStartBlockIndex() + 1;
-          
+
+          // Transactions comparison check
+          // https://medium.com/@karbo.org/prevent-transaction-cancellation-in-51-attack-79ba03d191f0
+          // Compare transactions in proposed alt chain vs current main chain
+          // and reject if some transaction is missing in the alt chain
+          logger(Logging::WARNING) << "Transactions comparison check triggered by reorg size " << reorgSize;
+          std::vector<Crypto::Hash> mainChainTxHashes = mainChainCache->getTransactionHashes(cache->getStartBlockIndex(), cache->getTopBlockIndex());
+          for (const auto& mainChainTxHash : mainChainTxHashes) {
+            if (!cache->hasTransaction(mainChainTxHash)) {
+              logger(Logging::ERROR) << "Attempting to switch to an alternate chain, but it lacks transaction "
+                                     << Common::podToHex(mainChainTxHash)
+                                     << " from main chain, rejected";
+              allowReorg = false;
+            }
+          }
+          mainChainTxHashes.clear();
+          mainChainTxHashes.shrink_to_fit();
 
           // Poisson check, courtesy of Ryo Project and fireice_uk for this version
           // https://github.com/ryo-currency/ryo-writeups/blob/master/poisson-writeup.md
@@ -1178,8 +1196,8 @@ bool Core::isTransactionValidForPool(const CachedTransaction& cachedTransaction,
   }
 
   bool isFusion = fee == 0 && currency.isFusionTransaction(cachedTransaction.getTransaction(), cachedTransaction.getTransactionBinaryArray().size(), getTopBlockIndex());
-  if (!isFusion && (getBlockMajorVersionForHeight(getTopBlockIndex()) < BLOCK_MAJOR_VERSION_4 ? fee < currency.minimumFee() :
-    fee < (getMinimalFee() - (getMinimalFee() * 20 / 100)))) {
+  if (!isFusion && (getTopBlockIndex() < CryptoNote::parameters::UPGRADE_HEIGHT_V4 ? (fee < currency.minimumFee()) :
+    (fee < (getMinimalFee() - (getMinimalFee() * 20 / 100))))) {
     logger(Logging::WARNING) << "Transaction " << cachedTransaction.getTransactionHash()
       << " is not valid. Reason: fee is too small and it's not a fusion transaction";
     return false;
@@ -1714,8 +1732,8 @@ std::error_code Core::validateSemantic(const Transaction& transaction, uint64_t&
 
   CachedTransaction cachedTransaction(std::move(transaction));
   bool isFusion = fee == 0 && currency.isFusionTransaction(transaction, cachedTransaction.getTransactionBinaryArray().size(), blockIndex);
-  if (!isFusion && (getBlockMajorVersionForHeight(getTopBlockIndex()) < BLOCK_MAJOR_VERSION_4 ? fee < currency.minimumFee() :
-    fee < (getMinimalFeeForHeight(blockIndex) - (getMinimalFeeForHeight(blockIndex) * 20 / 100)))) {
+  if (!isFusion && (blockIndex < CryptoNote::parameters::UPGRADE_HEIGHT_V4 ? (fee < currency.minimumFee()) :
+    (fee < (getMinimalFeeForHeight(blockIndex) - (getMinimalFeeForHeight(blockIndex) * 20 / 100))))) {
     return error::TransactionValidationError::INVALID_FEE;
   }
 

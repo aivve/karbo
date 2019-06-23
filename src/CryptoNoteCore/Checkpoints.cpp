@@ -1,25 +1,26 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2018, The TurtleCoin developers
-// Copyright (c) 2018, The Karbo developers
+// Copyright (c) 2016-2019, The Karbo developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <cstdlib>
 #include <stdio.h>
 #include <stdlib.h>
+#include <fstream>
 #include <iostream>
 #include <cstring>
 #include <string>
@@ -27,7 +28,6 @@
 #include <sstream>
 #include <vector>
 #include <iterator>
-#include <fstream>
 
 #include "../CryptoNoteConfig.h"
 #include "Checkpoints.h"
@@ -91,15 +91,15 @@ bool Checkpoints::isAlternativeBlockAllowed(uint32_t  blockchainSize,
     return false;
   }
 
-  /*if (blockIndex < blockchainSize - CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1
-    && blockchainSize > CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1
+  if (blockIndex < blockchainSize - CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW
+    && blockchainSize > CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW
     && !isInCheckpointZone(blockIndex)) {
     logger(Logging::DEBUGGING, Logging::BRIGHT_WHITE)
       << "An attempt of too deep reorganization: "
       << blockchainSize - blockIndex << ", BLOCK REJECTED";
 
     return false;
-  }*/
+  }
 
   auto it = points.upper_bound(blockchainSize);
   // Is blockchainSize before the first checkpoint?
@@ -153,7 +153,7 @@ bool Checkpoints::loadCheckpointsFromFile(const std::string& fileName) {
 #ifndef __ANDROID__
 bool Checkpoints::loadCheckpointsFromDns()
 {
-  std::string domain("no-checkpoints.karbo.org");
+  std::string domain("checkpoints.karbo.org");
   std::vector<std::string>records;
 
   logger(Logging::INFO) << "Fetching DNS checkpoint records from " << domain;
@@ -169,7 +169,7 @@ bool Checkpoints::loadCheckpointsFromDns()
 
     size_t del = record.find_first_of(':');
     std::string height_str = record.substr(0, del), hash_str = record.substr(del + 1, 64);
-    ss = std::stringstream(height_str);
+    ss.str(height_str);
     ss >> height;
     char c;
     if (del == std::string::npos) continue;

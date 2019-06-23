@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2017-2018, Karbo developers
+// Copyright (c) 2016-2019, The Karbo developers
 // 
 // All rights reserved.
 // 
@@ -42,7 +42,7 @@ LoggerMessage::LoggerMessage(ILogger& logger, const std::string& category, Level
 	, m_bGotText(false)
 {}
 
-#ifndef __linux__
+#if !defined(__linux__) || defined(__ANDROID__)
 LoggerMessage::LoggerMessage(LoggerMessage&& other)
 	: std::ostream(std::move(other))
 	, std::streambuf(std::move(other))

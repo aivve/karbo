@@ -3,20 +3,20 @@
 // Copyright (c) 2016, The Forknote developers
 // Copyright (c) 2016-2018, The Karbowanec developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "RpcServer.h"
 #include "version.h"
@@ -208,6 +208,7 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
       { "f_block_json", { makeMemberMethod(&RpcServer::f_on_block_json), false } },
       { "f_transaction_json", { makeMemberMethod(&RpcServer::f_on_transaction_json), false } },
       { "f_transactions_pool", { makeMemberMethod(&RpcServer::f_on_transactions_pool_json), false } },
+      { "f_mempool_json", { makeMemberMethod(&RpcServer::f_on_transactions_pool_json), false } },
       { "k_transactions_by_payment_id", { makeMemberMethod(&RpcServer::onTransactionsByPaymentId), false } },
       { "get_transaction_hashes_by_payment_id", { makeMemberMethod(&RpcServer::onGetTransactionHashesByPaymentId), false } },
       { "get_transaction_details_by_hashes", { makeMemberMethod(&RpcServer::onGetTransactionDetailsByHashes), false } },
@@ -309,7 +310,7 @@ bool RpcServer::masternode_check_incoming_tx(const BinaryArray& tx_blob) {
   uint64_t amount;
 
   if (!CryptoNote::findOutputsToAccount(transaction, m_fee_acc, m_view_key, out, amount)) {
-    logger(INFO) << "Could not find outputs to masternode fee address";
+    logger(INFO) << "Could not find outputs to masternode fee address, not relaying transaction";
     return false;
   }
 
@@ -1009,7 +1010,7 @@ bool RpcServer::on_getblockhash(const COMMAND_RPC_GETBLOCKHASH::request& req, CO
   }
 
   uint32_t h = static_cast<uint32_t>(req[0]);
-  Crypto::Hash blockId = m_core.getBlockHashByIndex(h - 1);
+  Crypto::Hash blockId = m_core.getBlockHashByIndex(h);
   if (blockId == NULL_HASH) {
     throw JsonRpc::JsonRpcError{ 
       CORE_RPC_ERROR_CODE_TOO_BIG_HEIGHT,
