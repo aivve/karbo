@@ -60,7 +60,14 @@ const Crypto::Hash& CachedBlock::getBlockHash() const {
 
 const Crypto::Hash& CachedBlock::getBlockLongHash(cn_context& cryptoContext) const {
   if (!blockLongHash.is_initialized()) {
-    if (block.majorVersion == BLOCK_MAJOR_VERSION_1 || block.majorVersion >= BLOCK_MAJOR_VERSION_4) {
+    if (block.majorVersion >= BLOCK_MAJOR_VERSION_5) {
+      const auto& rawHashingBlock = getBlockHashingBinaryArray();
+      blockLongHash = Hash();
+      Crypto::Hash hash_1;
+      cn_fast_hash(rawHashingBlock.data(), rawHashingBlock.size(), hash_1);
+      Crypto::balloon_hash(rawHashingBlock.data(), blockLongHash.get(), rawHashingBlock.size(), hash_1.data, sizeof(hash_1));
+    }
+    else if (block.majorVersion == BLOCK_MAJOR_VERSION_1 || block.majorVersion >= BLOCK_MAJOR_VERSION_4) {
       const auto& rawHashingBlock = getBlockHashingBinaryArray();
       blockLongHash = Hash();
       cn_slow_hash(cryptoContext, rawHashingBlock.data(), rawHashingBlock.size(), blockLongHash.get());
