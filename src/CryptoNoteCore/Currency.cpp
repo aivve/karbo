@@ -123,7 +123,7 @@ bool Currency::generateGenesisBlock() {
 }
 
 size_t Currency::difficultyBlocksCountByBlockVersion(uint8_t blockMajorVersion) const {
-if (blockMajorVersion >= BLOCK_MAJOR_VERSION_5) {
+  if (blockMajorVersion >= BLOCK_MAJOR_VERSION_5) {
     return difficultyBlocksCount4() + 1;
   }
   else if (blockMajorVersion == BLOCK_MAJOR_VERSION_3 || blockMajorVersion == BLOCK_MAJOR_VERSION_4) {
@@ -735,14 +735,16 @@ Difficulty Currency::nextDifficultyV5(uint32_t height, uint8_t blockMajorVersion
 
 	const int64_t T = static_cast<int64_t>(m_difficultyTarget);
 	int64_t N = difficultyBlocksCount4();
-
-	// Genesis should be the only time sizes are < N+1.
-	assert(timestamps.size() == cumulativeDifficulties.size() && timestamps.size() == N + 1);
-
+		
 	// Hard code D if there are not at least N+1 BLOCKS after fork (or genesis)
 	// This helps a lot in preventing a very common problem in CN forks from conflicting difficulties.
-	uint64_t difficulty_guess = !isTestnet() ? 10000 : 10000;
-	if (height >= upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) && height < upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) + N) { return difficulty_guess; }
+
+  uint64_t difficulty_guess = 10000;// !isTestnet() ? 1000000000 : 10000;
+
+  if (height >= upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) && height < upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) + N + 1) { return difficulty_guess; }
+
+  // Genesis should be the only time sizes are < N+1.
+  assert(timestamps.size() == cumulativeDifficulties.size() && timestamps.size() == N + 1);
 
 	uint64_t L(0), next_D, i, this_timestamp(0), previous_timestamp(0), avg_D;
 
@@ -771,9 +773,9 @@ Difficulty Currency::nextDifficultyV5(uint32_t height, uint8_t blockMajorVersion
 	}
 
 	// minimum limit
-	if (!isTestnet() && next_D < 10000) {
-		next_D = 10000;
-	}
+	//if (!isTestnet() && next_D < 1000000) {
+	//	next_D = 1000000;
+	//}
 
 	return next_D;
 }
