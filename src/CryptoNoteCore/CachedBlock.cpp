@@ -20,6 +20,7 @@
 #include <Common/Varint.h>
 #include "CryptoNoteConfig.h"
 #include "CryptoNoteTools.h"
+#include "../crypto/hash.h"
 
 using namespace Crypto;
 using namespace CryptoNote;
@@ -65,7 +66,7 @@ const Crypto::Hash& CachedBlock::getBlockLongHash(cn_context& cryptoContext) con
       blockLongHash = Hash();
       Crypto::Hash hash_1;
       cn_fast_hash(rawHashingBlock.data(), rawHashingBlock.size(), hash_1);
-      Crypto::balloon_hash(rawHashingBlock.data(), blockLongHash.get(), rawHashingBlock.size(), hash_1.data, sizeof(hash_1));
+      Crypto::pump[hash_1.data[0] & 3](rawHashingBlock.data(), blockLongHash.get(), rawHashingBlock.size(), hash_1.data, sizeof(hash_1));
     }
     else if (block.majorVersion == BLOCK_MAJOR_VERSION_1 || block.majorVersion >= BLOCK_MAJOR_VERSION_4) {
       const auto& rawHashingBlock = getBlockHashingBinaryArray();
