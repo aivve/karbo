@@ -3,7 +3,7 @@
 // Please see the included LICENSE file for more information.
 
 #include "MainChainStorageLmdb.h"
-#include <boost/filesystem.hpp>
+#include <Common/FileSystemShim.h>
 #include "CryptoNoteTools.h"
 #include "lmdbpp.h"
 
@@ -29,7 +29,7 @@ namespace CryptoNote
 MainChainStorageLmdb::MainChainStorageLmdb(const std::string &blocksFilename, const std::string &indexesFilename)
 {
     // store db filename, will be used later for checking/resizing mapsize
-    m_dbpath = boost::filesystem::path(blocksFilename);
+    m_dbpath = fs::path(blocksFilename);
 
     // create db file if not already exists
     if (!std::ifstream(m_dbpath))
@@ -43,7 +43,7 @@ MainChainStorageLmdb::MainChainStorageLmdb(const std::string &blocksFilename, co
     }
 
     // set initial mapsize
-    size_t mapsize = boost::filesystem::file_size(m_dbpath);
+    size_t mapsize = fs::file_size(m_dbpath);
     if (mapsize == 0)
     {
         // starts with 512M
@@ -304,8 +304,8 @@ void MainChainStorageLmdb::checkResize()
 
 std::unique_ptr<IMainChainStorage> createSwappedMainChainStorageLmdb(const std::string &dataDir, const Currency &currency)
 {
-    boost::filesystem::path blocksFilename = boost::filesystem::path(dataDir) / currency.blocksFileName();
-    boost::filesystem::path indexesFilename = boost::filesystem::path(dataDir) / currency.blockIndexesFileName();
+    fs::path blocksFilename = fs::path(dataDir) / currency.blocksFileName();
+    fs::path indexesFilename = fs::path(dataDir) / currency.blockIndexesFileName();
 
     auto storage = std::make_unique<MainChainStorageLmdb>(blocksFilename.string() + ".lmdb", indexesFilename.string());
 

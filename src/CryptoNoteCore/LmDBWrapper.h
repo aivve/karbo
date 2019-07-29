@@ -16,7 +16,7 @@
 #include "DataBaseConfig.h"
 
 #include <Logging/LoggerRef.h>
-#include <boost/filesystem.hpp>
+#include <Common/FileSystemShim.h>
 
 namespace CryptoNote
 {
