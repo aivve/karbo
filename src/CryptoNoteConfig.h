@@ -114,8 +114,8 @@ const uint32_t UPGRADE_WINDOW                                = EXPECTED_NUMBER_O
 static_assert(0 < UPGRADE_VOTING_THRESHOLD && UPGRADE_VOTING_THRESHOLD <= 100, "Bad UPGRADE_VOTING_THRESHOLD");
 static_assert(UPGRADE_VOTING_WINDOW > 1, "Bad UPGRADE_VOTING_WINDOW");
 
-const char     CRYPTONOTE_BLOCKS_FILENAME[]                  = "blocks.bin";
-const char     CRYPTONOTE_BLOCKINDEXES_FILENAME[]            = "blockindexes.bin";
+const char     CRYPTONOTE_BLOCKS_FILENAME[]                  = "blocks";
+const char     CRYPTONOTE_BLOCKINDEXES_FILENAME[]            = "blockindexes";
 const char     CRYPTONOTE_POOLDATA_FILENAME[]                = "poolstate.bin";
 const char     P2P_NET_DATA_FILENAME[]                       = "p2pstate.bin";
 const char     MINER_CONFIG_FILE_NAME[]                      = "miner_conf.json";

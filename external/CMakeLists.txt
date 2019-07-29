@@ -8,9 +8,9 @@ add_subdirectory(sqlite3)
 add_subdirectory(lmdb)
 
 if(MSVC)
-    set_property(TARGET upnpc-static cryptopp-static sqlite3 lmdb PROPERTY FOLDER "external")
+    set_property(TARGET upnpc-static sqlite3 lmdb PROPERTY FOLDER "external")
 elseif(NOT MSVC)
-    set_property(TARGET upnpc-static cryptopp-static sqlite3 lmdb PROPERTY FOLDER "external")
+    set_property(TARGET upnpc-static sqlite3 lmdb PROPERTY FOLDER "external")
 endif()
 
 if(MSVC)

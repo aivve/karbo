@@ -5,7 +5,7 @@
 #pragma once
 
 #include "IMainChainStorage.h"
-#include <Common/FileSystemShim.h>
+#include <boost/filesystem.hpp>
 
 #include "Currency.h"
 #include "lmdb.h"
@@ -42,7 +42,7 @@ namespace CryptoNote
             lmdb::dbi rwdbi;
             mutable std::atomic_int m_blockcount;
             mutable std::atomic_int m_dirty;
-            fs::path m_dbpath;
+            boost::filesystem::path m_dbpath;
     };
 
     std::unique_ptr<IMainChainStorage> createSwappedMainChainStorageLmdb(const std::string &dataDir, const Currency &currency);

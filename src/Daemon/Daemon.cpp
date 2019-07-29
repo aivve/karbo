@@ -39,11 +39,9 @@
 #include "CryptoNoteCore/DatabaseBlockchainCache.h"
 #include "CryptoNoteCore/DatabaseBlockchainCacheFactory.h"
 #include "CryptoNoteCore/MainChainStorage.h"
-#include "CryptoNoteCore/MainChainStorageRocksdb.h"
 #include "CryptoNoteCore/MainChainStorageSqlite.h"
 #include "CryptoNoteCore/MainChainStorageLmdb.h"
 #include "CryptoNoteCore/MinerConfig.h"
-//#include "CryptoNoteCore/RocksDBWrapper.h"
 #include "CryptoNoteCore/LmDBWrapper.h"
 #include "CryptoNoteProtocol/CryptoNoteProtocolHandler.h"
 #include "P2p/NetNode.h"
@@ -85,7 +83,6 @@ namespace
   const command_line::arg_descriptor<bool>                     arg_disable_checkpoints = { "without-checkpoints", "Synchronize without checkpoints" };
   const command_line::arg_descriptor<std::string>              arg_rollback            = { "rollback", "Rollback blockchain to <height>" };
   const command_line::arg_descriptor<bool>                     arg_sqlite_cache        = { "sqlite-cache", "Use SQLite3 for local cache files" };
-  const command_line::arg_descriptor<bool>                     arg_rocksdb_cache       = { "rocksdb-cache", "Use Rocksdb for local cache files" };
   const command_line::arg_descriptor<bool>                     arg_lmdb_cache          = { "lmdb-cache", "Use LMDB for local cache files" };
 }
 
@@ -151,8 +148,7 @@ int main(int argc, char* argv[])
     command_line::add_arg(desc_cmd_sett, arg_disable_checkpoints);
     command_line::add_arg(desc_cmd_sett, arg_rollback);
     command_line::add_arg(desc_cmd_sett, arg_sqlite_cache);
-    command_line::add_arg(desc_cmd_sett, arg_rocksdb_cache);
-    command_line::add_arg(desc_cmd_sett, arg_lmdb_cache);
+        command_line::add_arg(desc_cmd_sett, arg_lmdb_cache);
     command_line::add_arg(desc_cmd_sett, arg_set_contact);
 
     RpcServerConfig::initOptions(desc_cmd_sett);
@@ -302,7 +298,6 @@ int main(int argc, char* argv[])
       }
     }
 
-    //RocksDBWrapper database(logManager);
     LmDBWrapper database(logManager);
     database.init(dbConfig);
     Tools::ScopeExit dbShutdownOnExit([&database] () { database.shutdown(); });
@@ -312,7 +307,7 @@ int main(int argc, char* argv[])
       dbShutdownOnExit.cancel();
       database.shutdown();
 
-      database.destoy(dbConfig);
+      //database.destoy(dbConfig);
 
       database.init(dbConfig);
       dbShutdownOnExit.resume();
@@ -323,9 +318,6 @@ int main(int argc, char* argv[])
     std::unique_ptr<IMainChainStorage> mainChainStorage;
     if (command_line::has_arg(vm, arg_sqlite_cache)) {
       mainChainStorage = createSwappedMainChainStorageSqlite(data_dir_path.string(), currency);
-    }
-    else if (command_line::has_arg(vm, arg_rocksdb_cache)) {
-      mainChainStorage = createSwappedMainChainStorageRocksdb(data_dir_path.string(), currency);
     }
     else if (command_line::has_arg(vm, arg_lmdb_cache)) {
       mainChainStorage = createSwappedMainChainStorageLmdb(data_dir_path.string(), currency);

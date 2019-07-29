@@ -34,7 +34,7 @@
 #include "CryptoNoteCore/DatabaseBlockchainCacheFactory.h"
 #include "CryptoNoteCore/DataBaseConfig.h"
 #include "CryptoNoteCore/MainChainStorage.h"
-#include "CryptoNoteCore/RocksDBWrapper.h"
+#include "CryptoNoteCore/LmDBWrapper.h"
 #include "CryptoNoteProtocol/CryptoNoteProtocolHandler.h"
 #include "P2p/NetNode.h"
 #include <System/Context.h>
@@ -189,7 +189,7 @@ void PaymentGateService::runInProcess(Logging::LoggerRef& log) {
     }
   }
 
-  CryptoNote::RocksDBWrapper database(logger);
+  CryptoNote::LmDBWrapper database(logger);
   database.init(dbConfig);
   Tools::ScopeExit dbShutdownOnExit([&database] () { database.shutdown(); });
 
@@ -198,7 +198,7 @@ void PaymentGateService::runInProcess(Logging::LoggerRef& log) {
     dbShutdownOnExit.cancel();
     database.shutdown();
 
-    database.destoy(dbConfig);
+    //database.destoy(dbConfig);
 
     database.init(dbConfig);
     dbShutdownOnExit.resume();
