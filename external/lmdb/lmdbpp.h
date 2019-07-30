@@ -15,7 +15,7 @@
 #error "<lmdb++.h> requires a C++ compiler"
 #endif
 
-#if __cplusplus < 201703L
+#if __cplusplus < 2017
 #error "<lmdb++.h> requires a C++17 compiler (CXXFLAGS='-std=c++17')"
 #endif
 

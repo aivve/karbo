@@ -24,9 +24,9 @@ namespace CryptoNote
 class LmDBWrapper : public IDataBase
 {
 public:
-  LmDBWrapper(std::shared_ptr<Logging::ILogger> logger);
-  virtual ~LmDBWrapper();
-
+  LmDBWrapper(Logging::ILogger& logger);
+  virtual ~LmDBWrapper() override;
+  
   LmDBWrapper(const LmDBWrapper &) = delete;
   LmDBWrapper(LmDBWrapper &&) = delete;
 

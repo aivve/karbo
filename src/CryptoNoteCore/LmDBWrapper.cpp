@@ -25,7 +25,7 @@ namespace
     const size_t MAPSIZE_MIN_AVAIL = 512ULL * 1024 * 1024;
 } // namespace
 
-LmDBWrapper::LmDBWrapper(std::shared_ptr<Logging::ILogger> logger) : logger(logger, "LmDBWrapper"), state(NOT_INITIALIZED)
+LmDBWrapper::LmDBWrapper(Logging::ILogger& logger) : logger(logger, "LmDBWrapper"), state(NOT_INITIALIZED)
 {
 }
 
@@ -87,7 +87,7 @@ void LmDBWrapper::init(const DataBaseConfig &config)
     logger(INFO) << "Opening DB in " << m_dbDir;
     try
     {
-        m_db.open(m_dbDir.c_str(), MDB_NOSYNC | MDB_WRITEMAP | MDB_MAPASYNC | MDB_NORDAHEAD, 0664);
+        m_db.open(m_dbDir.string().c_str(), MDB_NOSYNC | MDB_WRITEMAP | MDB_MAPASYNC | MDB_NORDAHEAD, 0664);
     }
     catch (const std::exception &e)
     {
