@@ -205,7 +205,7 @@ int main(int argc, char* argv[])
       }
     }
 
-    Level cfgLogLevel = static_cast<Level>(static_cast<int>(Logging::ERROR) + command_line::get_arg(vm, arg_log_level));
+    Level cfgLogLevel = static_cast<Level>(static_cast<int>((Logging::Level) ERROR) + command_line::get_arg(vm, arg_log_level));
 
     // configure logging
     logManager.configure(buildLoggerConfiguration(cfgLogLevel, cfgLogFile));
@@ -218,7 +218,7 @@ int main(int argc, char* argv[])
 
     std::string contact_str = command_line::get_arg(vm, arg_set_contact);
     if (!contact_str.empty() && contact_str.size() > 128) {
-      logger(ERROR, BRIGHT_RED) << "Too long contact info";
+      logger((Logging::Level) ERROR, BRIGHT_RED) << "Too long contact info";
       return 1;
     }
 
@@ -363,7 +363,7 @@ int main(int argc, char* argv[])
 
     logger(INFO) << "Initializing p2p server...";
     if (!p2psrv.init(netNodeConfig)) {
-      logger(ERROR, BRIGHT_RED) << "Failed to initialize p2p server.";
+      logger((Logging::Level) ERROR, BRIGHT_RED) << "Failed to initialize p2p server.";
       return 1;
     }
 
@@ -383,7 +383,7 @@ int main(int argc, char* argv[])
                            boost::filesystem::canonical(dh_file_path).string());
         server_ssl_enable = true;
       } else {
-        logger(ERROR, BRIGHT_RED) << "Start RPC SSL server was canceled because certificate file(s) could not be found" << std::endl;
+        logger((Logging::Level) ERROR, BRIGHT_RED) << "Start RPC SSL server was canceled because certificate file(s) could not be found" << std::endl;
       }
     }
     std::string ssl_info = "";
@@ -397,7 +397,7 @@ int main(int argc, char* argv[])
 	  if (!addr_str.empty()) {
         AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
         if (!currency.parseAccountAddressString(addr_str, acc)) {
-          logger(ERROR, BRIGHT_RED) << "Bad fee address: " << addr_str;
+          logger((Logging::Level) ERROR, BRIGHT_RED) << "Bad fee address: " << addr_str;
           return 1;
         }
         rpcServer.setFeeAddress(addr_str, acc);
@@ -439,7 +439,7 @@ int main(int argc, char* argv[])
     ccore.save();
 
   } catch (const std::exception& e) {
-    logger(ERROR, BRIGHT_RED) << "Exception: " << e.what();
+    logger((Logging::Level) ERROR, BRIGHT_RED) << "Exception: " << e.what();
     return 1;
   }
 

@@ -102,7 +102,7 @@ Crypto::Hash BlockchainMonitor::requestLastBlockHash() {
 
     return blockHash;
   } catch (std::exception& e) {
-    m_logger(Logging::ERROR) << "Failed to request last block hash: " << e.what();
+    m_logger((Logging::Level) ERROR) << "Failed to request last block hash: " << e.what();
     throw;
   }
 }

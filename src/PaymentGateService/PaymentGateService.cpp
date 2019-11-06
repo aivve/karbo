@@ -303,6 +303,7 @@ void PaymentGateService::runRpcProxy(Logging::LoggerRef& log) {
     PaymentService::NodeFactory::createNode(
       config.remoteNodeConfig.m_daemon_host,
       config.remoteNodeConfig.m_daemon_port,
+      "/",
       config.remoteNodeConfig.m_enable_ssl,
       log.getLogger()));
 

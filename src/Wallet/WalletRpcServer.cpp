@@ -141,7 +141,7 @@ namespace Tools {
     m_run_ssl = false;
     if (!handle_command_line(vm))
     {
-      logger(Logging::ERROR) << "Failed to process command line in wallet_rpc_server";
+      logger((Logging::Level) ERROR) << "Failed to process command line in wallet_rpc_server";
       return false;
     }
     else
@@ -165,7 +165,7 @@ namespace Tools {
         }
         else
         {
-          logger(Logging::ERROR, BRIGHT_RED) << "Start RPC SSL server was canceled because certificate file(s) could not be found" << std::endl;
+          logger((Logging::Level) ERROR, BRIGHT_RED) << "Start RPC SSL server was canceled because certificate file(s) could not be found" << std::endl;
         }
       }
       return true;
@@ -249,13 +249,13 @@ namespace Tools {
     wallet_rpc::COMMAND_RPC_TRANSFER::response& res)
   {
     if (req.fee < m_node.getMinimalFee()) {
-      logger(Logging::ERROR) << "Fee " << std::to_string(req.fee) << " is too low";
+      logger((Logging::Level) ERROR) << "Fee " << std::to_string(req.fee) << " is too low";
       throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_FEE,
         std::string("Fee " + std::to_string(req.fee) + " is too low"));
     }
 
     if (req.mixin < m_currency.minMixin() && req.mixin != 0) {
-      logger(Logging::ERROR) << "Requested mixin " << std::to_string(req.mixin) << " is too low";
+      logger((Logging::Level) ERROR) << "Requested mixin " << std::to_string(req.mixin) << " is too low";
       throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_MIXIN,
         std::string("Requested mixin " + std::to_string(req.mixin) + " is too low"));
     }
@@ -564,7 +564,7 @@ namespace Tools {
       WalletHelper::storeWallet(m_wallet, m_walletFilename);
     }
     catch (std::exception& e) {
-      logger(Logging::ERROR) << "Couldn't save wallet: " << e.what();
+      logger((Logging::Level) ERROR) << "Couldn't save wallet: " << e.what();
       throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_UNKNOWN_ERROR, std::string("Couldn't save wallet: ") + e.what());
     }
     wallet_rpc_server::send_stop_signal();
@@ -706,7 +706,7 @@ namespace Tools {
       m_wallet.changePassword(req.old_password, req.new_password);
     }
     catch (const std::exception& e) {
-      logger(Logging::ERROR) << "Could not change password: " << e.what();
+      logger((Logging::Level) ERROR) << "Could not change password: " << e.what();
       throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_UNKNOWN_ERROR, std::string("Could not change password: ") + e.what());
       res.password_changed = false;
     }
@@ -736,7 +736,7 @@ namespace Tools {
     const size_t MAX_FUSION_OUTPUT_COUNT = 4;
 
     if (req.mixin < m_currency.minMixin() && req.mixin != 0) {
-      logger(Logging::ERROR) << "Requested mixin " << std::to_string(req.mixin) << " is too low";
+      logger((Logging::Level) ERROR) << "Requested mixin " << std::to_string(req.mixin) << " is too low";
       throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_MIXIN,
         std::string("Requested mixin " + std::to_string(req.mixin) + " is too low"));
     }
