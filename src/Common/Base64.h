@@ -1,4 +1,3 @@
-// Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2016-2019, The Karbo developers
 //
 // This file is part of Karbo.
@@ -19,24 +18,12 @@
 #pragma once
 
 #include <cstdint>
-#include <boost/program_options.hpp>
+#include <string>
 
-namespace PaymentService {
-
-class RpcNodeConfiguration {
-public:
-  RpcNodeConfiguration();
-
-  static void initOptions(boost::program_options::options_description& desc);
-  void init(const boost::program_options::variables_map& options);
-
-  std::string m_daemon_host;
-  uint16_t m_daemon_port;
-  uint16_t m_daemon_port_ssl;
-  bool m_enable_ssl;
-  std::string m_chain_file = "";
-  std::string m_key_file = "";
-  std::string m_dh_file = "";
-};
-
-} //namespace PaymentService
+namespace Tools
+{
+  namespace Base64
+  {
+    std::string encode(const std::string& data);
+  }
+}

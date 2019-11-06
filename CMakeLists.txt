@@ -7,6 +7,7 @@ enable_language(CXX)
 find_package(Threads)
 
 set(VERSION "0.1")
+set(WITH_SSL TRUE)
 
 ## This section describes our general CMake setup options
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -276,7 +277,9 @@ elseif(NOT MSVC)
 endif()
 
 find_package(Rocksdb 5.15.10)
-
+if (WITH_SSL)
+  find_package(Secure)
+endif()
 add_subdirectory(external)
 add_subdirectory(src)
 
@@ -290,4 +293,3 @@ if (NOT ROCKSDB_FOUND)
     set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${PROJECT_BINARY_DIR}/rocksdb/librocksdb.a")
   endif()
 endif()
-
