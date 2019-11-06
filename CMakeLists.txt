@@ -276,10 +276,46 @@ elseif(NOT MSVC)
   set(Boost_LIBRARIES "${Boost_LIBRARIES};rt")
 endif()
 
-find_package(Rocksdb 5.15.10)
-if (WITH_SSL)
-  find_package(Secure)
+## Let's see if we have any OpenSSL static libraries available
+set(OPENSSL_USE_STATIC_LIBS ON)
+## On MSVC, we need to link the RT/MT libraries
+if(MSVC)
+  set(OPENSSL_MSVC_STATIC_RT ON)
 endif()
+
+# We have to look for Homebrew OpenSSL a bit differently
+# Borrowed from https://github.com/tarantool/tarantool/commit/6eab201af1843f53a833c8928dc58fceffa08147
+if (APPLE)
+    find_program(HOMEBREW_EXECUTABLE brew)
+    execute_process(COMMAND ${HOMEBREW_EXECUTABLE} --prefix openssl
+            OUTPUT_VARIABLE HOMEBREW_OPENSSL
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if (DEFINED HOMEBREW_OPENSSL)
+        if (NOT DEFINED OPENSSL_ROOT_DIR)
+            message(STATUS "Setting OpenSSL root to ${HOMEBREW_OPENSSL}")
+            set(OPENSSL_ROOT_DIR "${HOMEBREW_OPENSSL}")
+        endif ()
+    endif ()
+endif ()
+
+find_package(OpenSSL)
+
+if (OPENSSL_FOUND)
+    ## On non MSVC build systems, we need to link ldl with the static OpenSSL library
+    if (NOT MSVC)
+        set(OPENSSL_LIBRARIES "${OPENSSL_LIBRARIES};dl")
+    endif ()
+
+    include_directories(SYSTEM ${OPENSSL_INCLUDE_DIR})
+    add_definitions(-DCPPHTTPLIB_OPENSSL_SUPPORT)
+    message(STATUS "OpenSSL Found: ${OPENSSL_INCLUDE_DIR}")
+    message(STATUS "OpenSSL Libraries: ${OPENSSL_LIBRARIES}")
+else ()
+    message(STATUS "OpenSSL Found: No... Skipping...")
+endif ()
+
+find_package(Rocksdb 5.15.10)
+
 add_subdirectory(external)
 add_subdirectory(src)
 
