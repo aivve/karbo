@@ -210,6 +210,7 @@ namespace CryptoNote
 	  std::string m_mnemonic_seed;
 	  std::string m_wallet_file;
 	  uint16_t m_daemon_port;
+    bool m_daemon_ssl;
 	  Crypto::SecretKey m_recovery_key;  // recovery key (used as random for wallet gen)
 	  bool m_restore_deterministic_wallet;  // recover flag
 	  bool m_non_deterministic;  // old 2-random generation

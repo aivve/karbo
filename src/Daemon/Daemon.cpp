@@ -50,7 +50,7 @@
 #include "Serialization/BinaryOutputStreamSerializer.h"
 #include "version.h"
 
-#include <Logging/LoggerManager.h>
+#include "Logging/LoggerManager.h"
 
 #if defined(WIN32)
 #include <crtdbg.h>
@@ -67,7 +67,7 @@ namespace
   const command_line::arg_descriptor<std::string>              arg_config_file         = {"config-file", "Specify configuration file", std::string(CryptoNote::CRYPTONOTE_NAME) + ".conf"};
   const command_line::arg_descriptor<bool>                     arg_os_version          = {"os-version", ""};
   const command_line::arg_descriptor<std::string>              arg_log_file            = {"log-file", "", ""};
-  const command_line::arg_descriptor<int>                      arg_log_level           = {"log-level", "", 2}; // info level
+  const command_line::arg_descriptor<int>                      arg_log_level           = {"log-level", "", 3}; // info level
   const command_line::arg_descriptor<bool>                     arg_console             = {"no-console", "Disable daemon console commands"};
   const command_line::arg_descriptor<bool>                     arg_restricted_rpc      = { "restricted-rpc", "Disable some of the RPC methods to prevent abuse" };
   const command_line::arg_descriptor<std::string>              arg_set_fee_address     = { "fee-address", "Sets fee address for light wallets to the daemon's RPC responses.", "" };
@@ -154,6 +154,9 @@ int main(int argc, char* argv[])
 
     po::variables_map vm;
     boost::filesystem::path data_dir_path;
+    boost::system::error_code ec;
+    std::string data_dir = "";
+
     bool r = command_line::handle_error_helper(desc_options, [&]()
     {
       po::store(po::parse_command_line(argc, argv, desc_options), vm);
@@ -165,7 +168,7 @@ int main(int argc, char* argv[])
         return false;
       }
 
-      std::string data_dir = command_line::get_arg(vm, command_line::arg_data_dir);
+      data_dir = command_line::get_arg(vm, command_line::arg_data_dir);
       std::string config = command_line::get_arg(vm, arg_config_file);
 
       data_dir_path = data_dir;
@@ -174,7 +177,6 @@ int main(int argc, char* argv[])
         config_path = data_dir_path / config_path;
       }
 
-      boost::system::error_code ec;
       if (boost::filesystem::exists(config_path, ec)) {
         po::store(po::parse_config_file<char>(config_path.string<std::string>().c_str(), desc_cmd_sett), vm);
       }
@@ -202,10 +204,14 @@ int main(int argc, char* argv[])
       }
     }
 
-    Level cfgLogLevel = static_cast<Level>(static_cast<int>(Logging::ERROR) + command_line::get_arg(vm, arg_log_level));
+    Logging::Level cfgLogLevel = static_cast<Logging::Level>(std::min<int>(command_line::get_arg(vm, arg_log_level), static_cast<int>(Logging::TRACE)));
 
     // configure logging
     logManager.configure(buildLoggerConfiguration(cfgLogLevel, cfgLogFile));
+
+    if (command_line::get_arg(vm, arg_log_level) > 5) {
+      logger(WARNING) << "Wrong log level, using maximal: 5";
+    }
 
     logger(INFO) << CryptoNote::CRYPTONOTE_NAME << " v" << PROJECT_VERSION_LONG;
 
@@ -215,7 +221,7 @@ int main(int argc, char* argv[])
 
     std::string contact_str = command_line::get_arg(vm, arg_set_contact);
     if (!contact_str.empty() && contact_str.size() > 128) {
-      logger(ERROR, BRIGHT_RED) << "Too long contact info";
+      logger((Logging::Level) ERROR, BRIGHT_RED) << "Too long contact info";
       return 1;
     }
 
@@ -278,6 +284,19 @@ int main(int argc, char* argv[])
 
     RpcServerConfig rpcConfig;
     rpcConfig.init(vm);
+
+    boost::filesystem::path chain_file_path(rpcConfig.getChainFile());
+    boost::filesystem::path key_file_path(rpcConfig.getKeyFile());
+    boost::filesystem::path dh_file_path(rpcConfig.getDhFile());
+    if (!chain_file_path.has_parent_path()) {
+      chain_file_path = data_dir_path / chain_file_path;
+    }
+    if (!key_file_path.has_parent_path()) {
+      key_file_path = data_dir_path / key_file_path;
+    }
+    if (!dh_file_path.has_parent_path()) {
+      dh_file_path = data_dir_path / dh_file_path;
+    }
 
     DataBaseConfig dbConfig;
     dbConfig.init(vm);
@@ -347,7 +366,7 @@ int main(int argc, char* argv[])
 
     logger(INFO) << "Initializing p2p server...";
     if (!p2psrv.init(netNodeConfig)) {
-      logger(ERROR, BRIGHT_RED) << "Failed to initialize p2p server.";
+      logger((Logging::Level) ERROR, BRIGHT_RED) << "Failed to initialize p2p server.";
       return 1;
     }
 
@@ -357,9 +376,23 @@ int main(int argc, char* argv[])
       dch.start_handling();
     }
 
-    logger(INFO) << "Starting core rpc server on address " << rpcConfig.getBindAddress();
-    rpcServer.start(rpcConfig.bindIp, rpcConfig.bindPort);
-
+    bool server_ssl_enable = false;
+    if (rpcConfig.isEnableSSL()) {
+      if (boost::filesystem::exists(chain_file_path, ec) &&
+          boost::filesystem::exists(key_file_path, ec) &&
+          boost::filesystem::exists(dh_file_path, ec)) {
+        rpcServer.setCerts(boost::filesystem::canonical(chain_file_path).string(),
+                           boost::filesystem::canonical(key_file_path).string(),
+                           boost::filesystem::canonical(dh_file_path).string());
+        server_ssl_enable = true;
+      } else {
+        logger((Logging::Level) ERROR, BRIGHT_RED) << "Start RPC SSL server was canceled because certificate file(s) could not be found" << std::endl;
+      }
+    }
+    std::string ssl_info = "";
+    if (server_ssl_enable) ssl_info +=  ", SSL on address " + rpcConfig.getBindAddressSSL();
+    logger(INFO) << "Starting core rpc server on address " << rpcConfig.getBindAddress() << ssl_info;
+    rpcServer.start(rpcConfig.getBindIP(), rpcConfig.getBindPort(), rpcConfig.getBindPortSSL(), server_ssl_enable);
     rpcServer.restrictRPC(command_line::get_arg(vm, arg_restricted_rpc));
     rpcServer.enableCors(command_line::get_arg(vm, arg_enable_cors));
 	if (command_line::has_arg(vm, arg_set_fee_address)) {
@@ -367,7 +400,7 @@ int main(int argc, char* argv[])
 	  if (!addr_str.empty()) {
         AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
         if (!currency.parseAccountAddressString(addr_str, acc)) {
-          logger(ERROR, BRIGHT_RED) << "Bad fee address: " << addr_str;
+          logger((Logging::Level) ERROR, BRIGHT_RED) << "Bad fee address: " << addr_str;
           return 1;
         }
         rpcServer.setFeeAddress(addr_str, acc);
@@ -409,7 +442,7 @@ int main(int argc, char* argv[])
     ccore.save();
 
   } catch (const std::exception& e) {
-    logger(ERROR, BRIGHT_RED) << "Exception: " << e.what();
+    logger((Logging::Level) ERROR, BRIGHT_RED) << "Exception: " << e.what();
     return 1;
   }
 

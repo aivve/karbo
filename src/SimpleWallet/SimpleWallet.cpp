@@ -67,6 +67,7 @@
 #include "Common/StringTools.h"
 #include "Common/PathTools.h"
 #include "Common/DnsTools.h"
+#include "Common/UrlTools.h"
 #include "Common/Base58.h"
 #include "Common/Util.h"
 #include "CryptoNoteCore/CryptoNoteFormatUtils.h"
@@ -118,30 +119,6 @@ const command_line::arg_descriptor<uint32_t> arg_log_level = { "log-level", "Set
 const command_line::arg_descriptor<bool> arg_testnet = { "testnet", "Used to deploy test nets. The daemon must be launched with --testnet flag", false };
 const command_line::arg_descriptor<bool> arg_reset = { "reset", "Discard cache data and start synchronizing from scratch", false };
 const command_line::arg_descriptor< std::vector<std::string> > arg_command = { "command", "" };
-
-
-bool parseUrlAddress(const std::string& url, std::string& address, uint16_t& port) {
-  auto pos = url.find("://");
-  size_t addrStart = 0;
-
-  if (pos != std::string::npos) {
-    addrStart = pos + 3;
-  }
-
-  auto addrEnd = url.find(':', addrStart);
-
-  if (addrEnd != std::string::npos) {
-    auto portEnd = url.find('/', addrEnd);
-    port = Common::fromString<uint16_t>(url.substr(
-      addrEnd + 1, portEnd == std::string::npos ? std::string::npos : portEnd - addrEnd - 1));
-  } else {
-    addrEnd = url.find('/');
-    port = 80;
-  }
-
-  address = url.substr(addrStart, addrEnd - addrStart);
-  return true;
-}
 
 
 inline std::string interpret_rpc_response(bool ok, const std::string& status) {
@@ -655,6 +632,8 @@ bool simple_wallet::exit(const std::vector<std::string> &args) {
 simple_wallet::simple_wallet(System::Dispatcher& dispatcher, const CryptoNote::Currency& currency, Logging::LoggerManager& log) :
   m_dispatcher(dispatcher),
   m_daemon_port(0), 
+  m_daemon_path("/"),
+  m_daemon_ssl(false),
   m_currency(currency), 
   m_logManager(log),
   logger(log, "simplewallet"),
@@ -1017,7 +996,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
   
 	if (!m_daemon_address.empty())
 	{
-		if (!parseUrlAddress(m_daemon_address, m_daemon_host, m_daemon_port))
+		if (!Common::parseUrlAddress(m_daemon_address, m_daemon_host, m_daemon_port, m_daemon_path, m_daemon_ssl))
 		{
 			fail_msg_writer() << "failed to parse daemon address: " << m_daemon_address;
 			return false;
@@ -1041,8 +1020,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 		return false;
 	}
 
-
-	this->m_node.reset(new NodeRpcProxy(m_daemon_host, m_daemon_port, logger.getLogger()));
+	this->m_node.reset(new NodeRpcProxy(m_daemon_host, m_daemon_port, m_daemon_path, m_daemon_ssl, m_logManager));
 
 	std::promise<std::error_code> errorPromise;
 	std::future<std::error_code> f_error = errorPromise.get_future();
@@ -1799,7 +1777,7 @@ bool simple_wallet::start_mining(const std::vector<std::string>& args) {
   COMMAND_RPC_START_MINING::response res;
 
   try {
-    HttpClient httpClient(m_dispatcher, m_daemon_host, m_daemon_port);
+    HttpClient httpClient(m_dispatcher, m_daemon_host, m_daemon_port, m_daemon_ssl);
 
     invokeJsonCommand(httpClient, "/start_mining", req, res);
 
@@ -1824,7 +1802,7 @@ bool simple_wallet::stop_mining(const std::vector<std::string>& args)
   COMMAND_RPC_STOP_MINING::response res;
 
   try {
-    HttpClient httpClient(m_dispatcher, m_daemon_host, m_daemon_port);
+    HttpClient httpClient(m_dispatcher, m_daemon_host, m_daemon_port, m_daemon_ssl);
 
     invokeJsonCommand(httpClient, "/stop_mining", req, res);
     std::string err = interpret_rpc_response(true, res.status);
@@ -2094,7 +2072,7 @@ std::string simple_wallet::resolveAlias(const std::string& aliasUrl) {
 //----------------------------------------------------------------------------------------------------
 std::string simple_wallet::getFeeAddress() {
   
-  HttpClient httpClient(m_dispatcher, m_daemon_host, m_daemon_port);
+  HttpClient httpClient(m_dispatcher, m_daemon_host, m_daemon_port, m_daemon_ssl);
 
   HttpRequest req;
   HttpResponse res;
@@ -2561,20 +2539,22 @@ int main(int argc, char* argv[]) {
 
     std::string daemon_address = command_line::get_arg(vm, arg_daemon_address);
     std::string daemon_host = command_line::get_arg(vm, arg_daemon_host);
+    std::string daemon_path = "/";
     uint16_t daemon_port = command_line::get_arg(vm, arg_daemon_port);
+    bool daemon_ssl = false;
     if (daemon_host.empty())
       daemon_host = "localhost";
     if (!daemon_port)
       daemon_port = RPC_DEFAULT_PORT;
 
     if (!daemon_address.empty()) {
-      if (!parseUrlAddress(daemon_address, daemon_host, daemon_port)) {
+      if (!Common::parseUrlAddress(daemon_address, daemon_host, daemon_port, daemon_path, daemon_ssl)) {
         logger(ERROR, BRIGHT_RED) << "failed to parse daemon address: " << daemon_address;
         return 1;
       }
     }
 
-    std::unique_ptr<INode> node(new NodeRpcProxy(daemon_host, daemon_port, logger.getLogger()));
+    std::unique_ptr<INode> node(new NodeRpcProxy(daemon_host, daemon_port, daemon_path, daemon_ssl, logger.getLogger()));
 
     std::promise<std::error_code> errorPromise;
     std::future<std::error_code> error = errorPromise.get_future();
@@ -2611,7 +2591,13 @@ int main(int argc, char* argv[]) {
       wrpc.send_stop_signal();
     });
 
-    logger(INFO) << "Starting wallet rpc server";
+    bool enable_ssl;
+    std::string bind_address;
+    std::string bind_address_ssl;
+    std::string ssl_info;
+    wrpc.getServerConf(bind_address, bind_address_ssl, enable_ssl);
+    if (enable_ssl) ssl_info += std::string(", SSL on address ") + bind_address_ssl;
+    logger(INFO) << "Starting wallet rpc server on address " << bind_address << ssl_info;
     wrpc.run();
     logger(INFO) << "Stopped wallet rpc server";
     
