@@ -51,7 +51,6 @@
 #include "version.h"
 
 #include "Logging/LoggerManager.h"
-#include "Logging/LoggerRef.h"
 
 #if defined(WIN32)
 #include <crtdbg.h>
@@ -68,7 +67,7 @@ namespace
   const command_line::arg_descriptor<std::string>              arg_config_file         = {"config-file", "Specify configuration file", std::string(CryptoNote::CRYPTONOTE_NAME) + ".conf"};
   const command_line::arg_descriptor<bool>                     arg_os_version          = {"os-version", ""};
   const command_line::arg_descriptor<std::string>              arg_log_file            = {"log-file", "", ""};
-  const command_line::arg_descriptor<int>                      arg_log_level           = {"log-level", "", 2}; // info level
+  const command_line::arg_descriptor<int>                      arg_log_level           = {"log-level", "", 3}; // info level
   const command_line::arg_descriptor<bool>                     arg_console             = {"no-console", "Disable daemon console commands"};
   const command_line::arg_descriptor<bool>                     arg_restricted_rpc      = { "restricted-rpc", "Disable some of the RPC methods to prevent abuse" };
   const command_line::arg_descriptor<std::string>              arg_set_fee_address     = { "fee-address", "Sets fee address for light wallets to the daemon's RPC responses.", "" };
@@ -205,10 +204,14 @@ int main(int argc, char* argv[])
       }
     }
 
-    Level cfgLogLevel = static_cast<Level>(static_cast<int>((Logging::Level) ERROR) + command_line::get_arg(vm, arg_log_level));
+    Logging::Level cfgLogLevel = static_cast<Logging::Level>(std::min<int>(command_line::get_arg(vm, arg_log_level), static_cast<int>(Logging::TRACE)));
 
     // configure logging
     logManager.configure(buildLoggerConfiguration(cfgLogLevel, cfgLogFile));
+
+    if (command_line::get_arg(vm, arg_log_level) > 5) {
+      logger(WARNING) << "Wrong log level, using maximal: 5";
+    }
 
     logger(INFO) << CryptoNote::CRYPTONOTE_NAME << " v" << PROJECT_VERSION_LONG;
 
