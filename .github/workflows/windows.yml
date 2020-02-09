@@ -2,8 +2,11 @@ name: Windows
 
 on:
   push:
-    tags:
-    - '*'
+  pull_request:
+  release:
+    types: [published]
+  schedule:
+    - cron: '30 3 * * 0'
 
 jobs:
   build-windows:
