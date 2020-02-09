@@ -45,9 +45,3 @@ jobs:
             ${{ steps.build.outputs.sha256 }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload To GH Artifacts
-        uses: actions/upload-artifact@v1.0.0
-        with:
-          name: ${{ steps.build.outputs.release_name }}
-          path: ${{ steps.build.outputs.asset_path }}
