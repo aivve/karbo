@@ -17,11 +17,15 @@ jobs:
 
       - name: Build
         id: build
+        env:
+          TAG: ${{ github.ref }}
+          COMMIT_SHA: ${{ github.sha }}
         run: |
           BOOST_ROOT=
           sudo apt install -y libboost-all-dev
           build_folder="build/release"
-          krb_ver=$(echo "$GITHUB_REF" | sed 's|refs/tags/||')
+          if [[ "${TAG:5:4}" == "tags" ]]; then export TAG=${TAG:10}; else export TAG=${COMMIT_SHA::8}; fi
+          $krb_ver=${TAG}
           krb_ver_folder=$(echo $krb_ver | sed 's/\.//g')
           release_name=Karbo-cli-ubuntu16.04-v"$krb_ver"
           mkdir -p "$build_folder"
