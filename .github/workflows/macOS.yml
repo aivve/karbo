@@ -17,13 +17,9 @@ jobs:
 
       - name: Build
         id: build
-        env:
-          TAG: ${{ github.ref }}
-          COMMIT_SHA: ${{ github.sha }}
         run: |
           build_folder="build/"
-          if [[ "${TAG:5:4}" == "tags" ]]; then export TAG=${TAG:10}; else export TAG=${COMMIT_SHA::8}; fi
-          $krb_ver=${TAG}
+          krb_ver=$(echo ${{ github.ref }} | sed 's|refs/tags/||')
           release_name="Karbo-cli-macOS-v$krb_ver"
           brew install gcc boost@1.60
           brew link boost@1.60 --force

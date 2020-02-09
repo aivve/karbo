@@ -21,13 +21,9 @@ jobs:
       - name: Build
         shell: powershell
         id: build
-        env:
-          TAG: ${{ github.ref }}
-          COMMIT_SHA: ${{ github.sha }}
         run: |
           $build_folder = "build"
-          if [[ "${TAG:5:4}" == "tags" ]]; then export TAG=${TAG:10}; else export TAG=${COMMIT_SHA::8}; fi
-          $krb_ver=${TAG}
+          $krb_ver = "${{ github.ref }}" -replace 'refs/tags/'
           $release_name = "karbo-cli-win64-v$krb_ver"
           mkdir "$build_folder"
           cd "$build_folder"
