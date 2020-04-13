@@ -33,7 +33,6 @@
 #include "CryptoNoteCore/DatabaseBlockchainCache.h"
 #include "CryptoNoteCore/DatabaseBlockchainCacheFactory.h"
 #include "CryptoNoteCore/DataBaseConfig.h"
-#include "CryptoNoteCore/MainChainStorage.h"
 #include "CryptoNoteCore/RocksDBWrapper.h"
 #include "CryptoNoteProtocol/CryptoNoteProtocolHandler.h"
 #include "P2p/NetNode.h"
@@ -218,8 +217,7 @@ void PaymentGateService::runInProcess(Logging::LoggerRef& log) {
     logger,
     std::move(checkpoints),
     *dispatcher,
-    std::unique_ptr<CryptoNote::IBlockchainCacheFactory>(new CryptoNote::DatabaseBlockchainCacheFactory(database, log.getLogger())),
-    CryptoNote::createSwappedMainChainStorage(dbConfig.getDataDir(), currency));
+    std::unique_ptr<CryptoNote::IBlockchainCacheFactory>(new CryptoNote::DatabaseBlockchainCacheFactory(database, log.getLogger())));
 
   core.load();
 

@@ -117,6 +117,8 @@ public:
   virtual std::vector<Crypto::Hash> getTransactionHashesByPaymentId(const Crypto::Hash& paymentId) const = 0;
   virtual bool getTransactionsByPaymentId(const Crypto::Hash& paymentId, std::vector<Transaction>& transactions) = 0;
 
+  virtual void rewind(const uint64_t blockIndex) = 0;
+
   virtual uint64_t getMinimalFeeForHeight(uint32_t height) = 0;
   virtual uint64_t getMinimalFee() = 0;
   virtual bool getMixin(const Transaction& transaction, uint64_t& mixin) = 0;
@@ -125,7 +127,7 @@ public:
   virtual size_t getBlockchainTransactionCount() const = 0;
   virtual size_t getAlternativeBlockCount() const = 0;
   virtual uint64_t getTotalGeneratedAmount() const = 0;
-  virtual uint32_t get_current_blockchain_height() const = 0;
+  virtual uint32_t getCurrentBlockchainHeight() const = 0;
 
 };
 }

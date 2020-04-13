@@ -78,9 +78,6 @@ bool Currency::init() {
   if (isTestnet()) {
     m_upgradeHeightV2 = 0;
     m_upgradeHeightV3 = static_cast<uint32_t>(-1);
-    m_blocksFileName = "testnet_" + m_blocksFileName;
-    m_blockIndexesFileName = "testnet_" + m_blockIndexesFileName;
-    m_txPoolFileName = "testnet_" + m_txPoolFileName;
   }
 
   return true;
@@ -900,9 +897,6 @@ m_upgradeHeightV5(currency.m_upgradeHeightV5),
 m_upgradeVotingThreshold(currency.m_upgradeVotingThreshold),
 m_upgradeVotingWindow(currency.m_upgradeVotingWindow),
 m_upgradeWindow(currency.m_upgradeWindow),
-m_blocksFileName(currency.m_blocksFileName),
-m_blockIndexesFileName(currency.m_blockIndexesFileName),
-m_txPoolFileName(currency.m_txPoolFileName),
 
 m_tailEmissionReward(currency.m_tailEmissionReward),
 m_cryptonoteCoinVersion(currency.m_cryptonoteCoinVersion),
@@ -973,10 +967,6 @@ CurrencyBuilder::CurrencyBuilder(Logging::ILogger& log) : m_currency(log) {
   upgradeVotingThreshold(parameters::UPGRADE_VOTING_THRESHOLD);
   upgradeVotingWindow(parameters::UPGRADE_VOTING_WINDOW);
   upgradeWindow(parameters::UPGRADE_WINDOW);
-
-  blocksFileName(parameters::CRYPTONOTE_BLOCKS_FILENAME);
-  blockIndexesFileName(parameters::CRYPTONOTE_BLOCKINDEXES_FILENAME);
-  txPoolFileName(parameters::CRYPTONOTE_POOLDATA_FILENAME);
 
   testnet(false);
 }

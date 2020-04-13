@@ -30,7 +30,6 @@
 #include "IBlockchainCacheFactory.h"
 #include "ICore.h"
 #include "ICoreInformation.h"
-#include "IMainChainStorage.h"
 #include "ITransactionPool.h"
 #include "ITransactionPoolCleaner.h"
 #include "IUpgradeManager.h"
@@ -48,7 +47,7 @@ namespace CryptoNote {
 class Core : public ICore, public ICoreInformation {
 public:
   Core(const Currency& currency, Logging::ILogger& logger, Checkpoints&& checkpoints, System::Dispatcher& dispatcher,
-       std::unique_ptr<IBlockchainCacheFactory>&& blockchainCacheFactory, std::unique_ptr<IMainChainStorage>&& mainChainStorage);
+       std::unique_ptr<IBlockchainCacheFactory>&& blockchainCacheFactory);
   virtual ~Core() override;
 
   virtual bool addMessageQueue(MessageQueue<BlockchainMessage>&  messageQueue) override;
@@ -129,7 +128,10 @@ public:
   virtual std::vector<Crypto::Hash> getTransactionHashesByPaymentId(const Crypto::Hash& paymentId) const override;
   virtual bool getTransactionsByPaymentId(const Crypto::Hash& paymentId, std::vector<Transaction>& transactions) override;
 
-  virtual uint32_t get_current_blockchain_height() const;
+  virtual uint32_t getCurrentBlockchainHeight() const;
+
+  virtual void rewind(const uint64_t blockIndex) override;
+
   uint8_t getBlockMajorVersionForHeight(uint32_t height) const;
   virtual bool getMixin(const Transaction& transaction, uint64_t& mixin) override;
 
@@ -156,7 +158,6 @@ private:
 
   IntrusiveLinkedList<MessageQueue<BlockchainMessage>> queueList;
   std::unique_ptr<IBlockchainCacheFactory> blockchainCacheFactory;
-  std::unique_ptr<IMainChainStorage> mainChainStorage;
   bool initialized;
 
   time_t start_time;
@@ -223,10 +224,8 @@ private:
   bool isTransactionValidForPool(const CachedTransaction& cachedTransaction, TransactionValidatorState& validatorState);
 
   void initRootSegment();
-  void importBlocksFromStorage();
   void cutSegment(IBlockchainCache& segment, uint32_t startIndex);
 
-  void switchMainChainStorage(uint32_t splitBlockIndex, IBlockchainCache& newChain);
 };
 
 }

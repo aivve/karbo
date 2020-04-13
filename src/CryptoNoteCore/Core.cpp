@@ -184,36 +184,14 @@ int64_t getEmissionChange(const Currency& currency, IBlockchainCache& segment, u
   return emissionChange;
 }
 
-uint32_t findCommonRoot(IMainChainStorage& storage, IBlockchainCache& rootSegment) {
-  assert(storage.getBlockCount());
-  assert(rootSegment.getBlockCount());
-  assert(rootSegment.getStartBlockIndex() == 0);
-  assert(getBlockHash(storage.getBlockByIndex(0)) == rootSegment.getBlockHash(0));
-
-  uint32_t left = 0;
-  uint32_t right = std::min(storage.getBlockCount() - 1, rootSegment.getBlockCount() - 1);
-  while (left != right) {
-    assert(right >= left);
-    uint32_t checkElement = left + (right - left) / 2 + 1;
-    if (getBlockHash(storage.getBlockByIndex(checkElement)) == rootSegment.getBlockHash(checkElement)) {
-      left = checkElement;
-    } else {
-      right = checkElement - 1;
-    }
-  }
-
-  return left;
-}
-
 const std::chrono::seconds OUTDATED_TRANSACTION_POLLING_INTERVAL = std::chrono::seconds(60);
 
 }
 
 Core::Core(const Currency& currency, Logging::ILogger& logger, Checkpoints&& checkpoints, System::Dispatcher& dispatcher,
-           std::unique_ptr<IBlockchainCacheFactory>&& blockchainCacheFactory, std::unique_ptr<IMainChainStorage>&& mainchainStorage)
+           std::unique_ptr<IBlockchainCacheFactory>&& blockchainCacheFactory)
     : currency(currency), dispatcher(dispatcher), contextGroup(dispatcher), logger(logger, "Core"), checkpoints(std::move(checkpoints)),
-      upgradeManager(new UpgradeManager()), blockchainCacheFactory(std::move(blockchainCacheFactory)),
-      mainChainStorage(std::move(mainchainStorage)), initialized(false) {
+      upgradeManager(new UpgradeManager()), blockchainCacheFactory(std::move(blockchainCacheFactory)), initialized(false) {
 
   upgradeManager->addMajorBlockVersion(BLOCK_MAJOR_VERSION_2, currency.upgradeHeight(BLOCK_MAJOR_VERSION_2));
   upgradeManager->addMajorBlockVersion(BLOCK_MAJOR_VERSION_3, currency.upgradeHeight(BLOCK_MAJOR_VERSION_3));
@@ -687,7 +665,6 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
 
       // TODO: exception safety
       if (cache == chainsLeaves[0]) {
-        mainChainStorage->pushBlock(rawBlock);
 
         cache->pushBlock(cachedBlock, transactions, validatorState, cumulativeBlockSize, emissionChange, currentDifficulty, std::move(rawBlock));
 		
@@ -796,8 +773,6 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
             actualizePoolTransactions();
             copyTransactionsToPool(chainsLeaves[endpointIndex]);
 
-            switchMainChainStorage(chainsLeaves[0]->getStartBlockIndex(), *chainsLeaves[0]);
-
             ret = error::AddBlockErrorCode::ADDED_TO_ALTERNATIVE_AND_SWITCHED;
 
             logger(Logging::WARNING) << "Switching to alternative chain! New top block hash: " << cachedBlock.getBlockHash() << ", index: " << (previousBlockIndex + 1)
@@ -888,19 +863,6 @@ void Core::actualizePoolTransactionsLite(const TransactionValidatorState& valida
       pool.removeTransaction(hash);
       notifyObservers(makeDelTransactionMessage({ hash }, Messages::DeleteTransaction::Reason::NotActual));
     }
-  }
-}
-
-void Core::switchMainChainStorage(uint32_t splitBlockIndex, IBlockchainCache& newChain) {
-  assert(mainChainStorage->getBlockCount() > splitBlockIndex);
-
-  auto blocksToPop = mainChainStorage->getBlockCount() - splitBlockIndex;
-  for (size_t i = 0; i < blocksToPop; ++i) {
-    mainChainStorage->popBlock();
-  }
-
-  for (uint32_t index = splitBlockIndex; index <= newChain.getTopBlockIndex(); ++index) {
-    mainChainStorage->pushBlock(newChain.getBlockByIndex(index));
   }
 }
 
@@ -1775,31 +1737,6 @@ void Core::load() {
 
   start_time = std::time(nullptr);
 
-  auto dbBlocksCount = chainsLeaves[0]->getTopBlockIndex() + 1;
-  auto storageBlocksCount = mainChainStorage->getBlockCount();
-
-  logger(Logging::DEBUGGING) << "Blockchain storage blocks count: " << storageBlocksCount << ", DB blocks count: " << dbBlocksCount;
-
-  assert(storageBlocksCount != 0); //we assume the storage has at least genesis block
-
-  if (storageBlocksCount > dbBlocksCount) {
-    logger(Logging::INFO) << "Importing blocks from blockchain storage";
-    importBlocksFromStorage();
-  } else if (storageBlocksCount < dbBlocksCount) {
-    auto cutFrom = findCommonRoot(*mainChainStorage, *chainsLeaves[0]) + 1;
-
-    logger(Logging::INFO) << "DB has more blocks than blockchain storage, cutting from block index: " << cutFrom;
-    cutSegment(*chainsLeaves[0], cutFrom);
-
-    assert(chainsLeaves[0]->getTopBlockIndex() + 1 == mainChainStorage->getBlockCount());
-  } else if (getBlockHash(mainChainStorage->getBlockByIndex(storageBlocksCount - 1)) != chainsLeaves[0]->getTopBlockHash()) {
-    logger(Logging::INFO) << "Blockchain storage and root segment are on different chains. "
-                             << "Cutting root segment to common block index " << findCommonRoot(*mainChainStorage, *chainsLeaves[0]) << " and reimporting blocks";
-    importBlocksFromStorage();
-  } else {
-    logger(Logging::DEBUGGING) << "Blockchain storage and root segment are on the same height and chain";
-  }
-
   initialized = true;
 }
 
@@ -1818,50 +1755,8 @@ void Core::initRootSegment() {
   chainsLeaves[0]->load();
 }
 
-void Core::importBlocksFromStorage() {
-  uint32_t commonIndex = findCommonRoot(*mainChainStorage, *chainsLeaves[0]);
-  assert(commonIndex <= mainChainStorage->getBlockCount());
-
-  cutSegment(*chainsLeaves[0], commonIndex + 1);
-
-  auto previousBlockHash = getBlockHash(mainChainStorage->getBlockByIndex(commonIndex));
-  auto blockCount = mainChainStorage->getBlockCount();
-  for (uint32_t i = commonIndex + 1; i < blockCount; ++i) {
-    RawBlock rawBlock = mainChainStorage->getBlockByIndex(i);
-    auto blockTemplate = extractBlockTemplate(rawBlock);
-    CachedBlock cachedBlock(blockTemplate);
-
-    if (blockTemplate.previousBlockHash != previousBlockHash) {
-      logger(Logging::ERROR) << "Corrupted blockchain. Block with index " << i << " and hash " << cachedBlock.getBlockHash()
-                             << " has previous block hash " << blockTemplate.previousBlockHash << ", but parent has hash " << previousBlockHash
-                             << ". Resynchronize your daemon please.";
-      throw std::system_error(make_error_code(error::CoreErrorCode::CORRUPTED_BLOCKCHAIN));
-    }
-
-    previousBlockHash = cachedBlock.getBlockHash();
-
-    std::vector<CachedTransaction> transactions;
-    uint64_t cumulativeSize = 0;
-    if (!extractTransactions(rawBlock.transactions, transactions, cumulativeSize)) {
-      logger(Logging::ERROR) << "Couldn't deserialize raw block transactions in block " << cachedBlock.getBlockHash();
-      throw std::system_error(make_error_code(error::AddBlockErrorCode::DESERIALIZATION_FAILED));
-    }
-
-    cumulativeSize += getObjectBinarySize(blockTemplate.baseTransaction);
-    TransactionValidatorState spentOutputs = extractSpentOutputs(transactions);
-    auto currentDifficulty = chainsLeaves[0]->getDifficultyForNextBlock(i - 1);
-
-    uint64_t cumulativeFee = std::accumulate(transactions.begin(), transactions.end(), UINT64_C(0), [] (uint64_t fee, const CachedTransaction& transaction) {
-      return fee + transaction.getTransactionFee();
-    });
-
-    int64_t emissionChange = getEmissionChange(currency, *chainsLeaves[0], i - 1, cachedBlock, cumulativeSize, cumulativeFee);
-    chainsLeaves[0]->pushBlock(cachedBlock, transactions, spentOutputs, cumulativeSize, emissionChange, currentDifficulty, std::move(rawBlock));
-
-    if (i % 1000 == 0) {
-      logger(Logging::INFO) << "Imported block with index " << i << " / " << (blockCount - 1);
-    }
-  }
+void Core::rewind(const uint64_t blockIndex) {
+  cutSegment(*chainsLeaves[0], blockIndex);
 }
 
 void Core::cutSegment(IBlockchainCache& segment, uint32_t startIndex) {
@@ -2288,7 +2183,7 @@ BlockDetails Core::getBlockDetails(const Crypto::Hash& blockHash) const {
   }
 
   blockDetails.index = blockIndex;
-  blockDetails.depth = get_current_blockchain_height() - blockDetails.index - 1;
+  blockDetails.depth = segment->getTopBlockIndex() - blockDetails.index;
 
   blockDetails.isAlternative = mainChainSet.count(segment) == 0;
 
@@ -2759,8 +2654,9 @@ void Core::updateBlockMedianSize() {
   blockMedianSize = std::max(Common::medianValue(lastBlockSizes), static_cast<uint64_t>(nextBlockGrantedFullRewardZone));
 }
 
-uint32_t Core::get_current_blockchain_height() const {
-  return mainChainStorage->getBlockCount();
+uint32_t Core::getCurrentBlockchainHeight() const {
+  auto mainChain = chainsLeaves[0];
+  return mainChain->getTopBlockIndex();
 }
 
 bool Core::isKeyImageSpent(const Crypto::KeyImage& key_im) {

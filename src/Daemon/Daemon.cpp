@@ -38,7 +38,6 @@
 #include "CryptoNoteCore/Currency.h"
 #include "CryptoNoteCore/DatabaseBlockchainCache.h"
 #include "CryptoNoteCore/DatabaseBlockchainCacheFactory.h"
-#include "CryptoNoteCore/MainChainStorage.h"
 #include "CryptoNoteCore/MinerConfig.h"
 #include "CryptoNoteCore/RocksDBWrapper.h"
 #include "CryptoNoteProtocol/CryptoNoteProtocolHandler.h"
@@ -309,7 +308,15 @@ int main(int argc, char* argv[])
 
     System::Dispatcher dispatcher;
 
-    std::unique_ptr<IMainChainStorage> mainChainStorage = createSwappedMainChainStorage(data_dir_path.string(), currency);
+    logger(INFO) << "Initializing core...";
+    CryptoNote::Core ccore(
+      currency,
+      logManager,
+      std::move(checkpoints),
+      dispatcher,
+      std::unique_ptr<IBlockchainCacheFactory>(new DatabaseBlockchainCacheFactory(database, logger.getLogger())));
+    ccore.load();
+    logger(INFO) << "Core initialized OK";
 
     if (command_line::has_arg(vm, arg_rollback)) {
       std::string rollback_str = command_line::get_arg(vm, arg_rollback);
@@ -319,24 +326,13 @@ int main(int argc, char* argv[])
           std::cout << "wrong block index parameter" << ENDL;
           return false;
         }
-        logger(INFO, BRIGHT_YELLOW) << "Rollback blockchain to height " << _index;
-        while (mainChainStorage->getBlockCount() >= _index)
-        {
-          mainChainStorage->popBlock();
-        }
+        logger(INFO, BRIGHT_YELLOW) << "Rewinding blockchain to height " << _index;
+
+        ccore.rewind(_index);
+
+        logger(INFO, BRIGHT_YELLOW) << "Blockchain rewound to height " << _index;
       }
     }
-
-    logger(INFO) << "Initializing core...";
-    CryptoNote::Core ccore(
-      currency,
-      logManager,
-      std::move(checkpoints),
-      dispatcher,
-      std::unique_ptr<IBlockchainCacheFactory>(new DatabaseBlockchainCacheFactory(database, logger.getLogger())),
-      std::move(mainChainStorage));
-    ccore.load();
-    logger(INFO) << "Core initialized OK";
 
     CryptoNote::CryptoNoteProtocolHandler cprotocol(currency, dispatcher, ccore, nullptr, logManager);
     CryptoNote::NodeServer p2psrv(dispatcher, cprotocol, logManager);

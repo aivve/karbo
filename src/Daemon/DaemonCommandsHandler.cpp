@@ -127,7 +127,7 @@ bool DaemonCommandsHandler::help(const std::vector<std::string>& args) {
 
 //--------------------------------------------------------------------------------
 bool DaemonCommandsHandler::status(const std::vector<std::string>& args) {
-  uint32_t topBlkIndex = m_core.get_current_blockchain_height() - 1;
+  uint32_t topBlkIndex = m_core.getCurrentBlockchainHeight() - 1;
   uint64_t difficulty = m_core.getDifficultyForNextBlock();
   size_t tx_pool_size = m_core.getPoolTransactionCount();
   size_t alt_blocks_count = m_core.getAlternativeBlockCount();
