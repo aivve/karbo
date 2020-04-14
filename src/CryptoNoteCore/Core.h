@@ -170,7 +170,7 @@ private:
   std::error_code validateSemantic(const Transaction& transaction, uint64_t& fee, uint32_t blockIndex);
   std::error_code validateTransaction(const CachedTransaction& transaction, TransactionValidatorState& state, IBlockchainCache* cache, uint64_t& fee, uint32_t blockIndex);
   std::error_code validateMixin(const Transaction& transaction, uint32_t blockIndex);
-  std::error_code validateFee(const Transaction& transaction, uint32_t blockIndex);
+  std::error_code validateFee(const Transaction& transaction, uint64_t fee, uint32_t blockIndex);
 
   bool check_tx_inputs_keyimages_diff(const Transaction& tx);
 

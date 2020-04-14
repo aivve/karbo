@@ -673,8 +673,8 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
         actualizePoolTransactionsLite(validatorState);
 
         ret = error::AddBlockErrorCode::ADDED_TO_MAIN;
-        logger(Logging::DEBUGGING) << "Block " << cachedBlock.getBlockHash() << " added to main chain. Index: " << (previousBlockIndex + 1);
-        if ((previousBlockIndex + 1) % 100 == 0) {
+        //logger(Logging::DEBUGGING) << "Block " << cachedBlock.getBlockHash() << " added to main chain. Index: " << (previousBlockIndex + 1);
+        if ((previousBlockIndex + 1) % 1000 == 0) {
           logger(Logging::INFO) << "Block " << cachedBlock.getBlockHash() << " added to main chain. Index: " << (previousBlockIndex + 1);
         }
 
@@ -1029,7 +1029,7 @@ bool Core::addTransactionToPool(CachedTransaction&& cachedTransaction) {
 }
 
 bool Core::isTransactionValidForPool(const CachedTransaction& cachedTransaction, TransactionValidatorState& validatorState) {
-  uint64_t fee;
+  uint64_t fee = 0;
 
   if (auto validationResult = validateTransaction(cachedTransaction, validatorState, chainsLeaves[0], fee, getTopBlockIndex())) {
     logger(Logging::DEBUGGING) << "Transaction " << cachedTransaction.getTransactionHash()
@@ -1352,14 +1352,23 @@ std::error_code Core::validateTransaction(const CachedTransaction& cachedTransac
   // TransactionValidatorState currentState;
   const auto& transaction = cachedTransaction.getTransaction();
 
-  auto error_mixin = validateMixin(transaction, blockIndex);
-  if (error_mixin != error::TransactionValidationError::VALIDATION_SUCCESS) {
-    return error_mixin;
+  if (!checkpoints.isInCheckpointZone(blockIndex + 1)) {
+    auto error_mixin = validateMixin(transaction, blockIndex);
+    if (error_mixin != error::TransactionValidationError::VALIDATION_SUCCESS) {
+      return error_mixin;
+    }
   }
 
   auto error = validateSemantic(transaction, fee, blockIndex);
   if (error != error::TransactionValidationError::VALIDATION_SUCCESS) {
     return error;
+  }
+
+  if (!checkpoints.isInCheckpointZone(blockIndex + 1)) {
+    auto error_fee = validateFee(transaction, fee, blockIndex);
+    if (error_fee != error::TransactionValidationError::VALIDATION_SUCCESS) {
+      return error_fee;
+    }
   }
 
   size_t inputIndex = 0;
@@ -1384,7 +1393,7 @@ std::error_code Core::validateTransaction(const CachedTransaction& cachedTransac
           globalIndexes[i] = globalIndexes[i - 1] + in.outputIndexes[i];
         }
 
-        auto result = cache->extractKeyOutputKeys(in.amount, blockIndex, {globalIndexes.data(), globalIndexes.size()}, outputKeys);
+        auto result = cache->extractKeyOutputKeys(in.amount, blockIndex, { globalIndexes.data(), globalIndexes.size() }, outputKeys);
         if (result == ExtractOutputKeysResult::INVALID_GLOBAL_INDEX) {
           return error::TransactionValidationError::INPUT_INVALID_GLOBAL_INDEX;
         }
@@ -1400,7 +1409,7 @@ std::error_code Core::validateTransaction(const CachedTransaction& cachedTransac
 
         std::vector<const Crypto::PublicKey*> outputKeyPointers;
         outputKeyPointers.reserve(outputKeys.size());
-        std::for_each(outputKeys.begin(), outputKeys.end(), [&outputKeyPointers] (const Crypto::PublicKey& key) { outputKeyPointers.push_back(&key); });
+        std::for_each(outputKeys.begin(), outputKeys.end(), [&outputKeyPointers](const Crypto::PublicKey& key) { outputKeyPointers.push_back(&key); });
         if (!Crypto::check_ring_signature(cachedTransaction.getTransactionPrefixHash(), in.keyImage, outputKeyPointers.data(),
                                           outputKeyPointers.size(), transaction.signatures[inputIndex].data(),
                                           blockIndex > parameters::KEY_IMAGE_CHECKING_BLOCK_INDEX)) {
@@ -1452,7 +1461,7 @@ std::error_code Core::validateTransaction(const CachedTransaction& cachedTransac
       return error::TransactionValidationError::INPUT_UNKNOWN_TYPE;
     }
 
-    inputIndex++;
+    inputIndex++;  
   }
 
   return error::TransactionValidationError::VALIDATION_SUCCESS;
@@ -1483,6 +1492,25 @@ std::error_code Core::validateMixin(const Transaction& transaction, uint32_t blo
   return error::TransactionValidationError::VALIDATION_SUCCESS;
 }
 
+std::error_code Core::validateFee(const Transaction& transaction, uint64_t fee, uint32_t blockIndex) {
+  CachedTransaction cachedTransaction(std::move(transaction));
+  bool isFusion = fee == 0 && currency.isFusionTransaction(transaction, cachedTransaction.getTransactionBinaryArray().size(), blockIndex);
+  if (!isFusion && !checkpoints.isInCheckpointZone(blockIndex)) {
+    if (blockIndex < CryptoNote::parameters::UPGRADE_HEIGHT_V4) {
+      if (fee < currency.minimumFee()) {
+        return error::TransactionValidationError::INVALID_FEE;
+      }
+    }
+    else {
+      uint64_t minFee = getMinimalFeeForHeight(blockIndex);
+      if (fee < (minFee - (minFee * 20 / 100))) {
+        return error::TransactionValidationError::INVALID_FEE;
+      }
+    }
+  }
+  return error::TransactionValidationError::VALIDATION_SUCCESS;
+}
+
 std::error_code Core::validateSemantic(const Transaction& transaction, uint64_t& fee, uint32_t blockIndex) {
   if (transaction.inputs.empty()) {
     return error::TransactionValidationError::EMPTY_INPUTS;
@@ -1494,7 +1522,7 @@ std::error_code Core::validateSemantic(const Transaction& transaction, uint64_t&
       return error::TransactionValidationError::OUTPUT_ZERO_AMOUNT;
     }
 
-    if (!is_valid_decomposed_amount(output.amount) && blockIndex >= CryptoNote::parameters::UPGRADE_HEIGHT_V5) {
+    if (blockIndex >= CryptoNote::parameters::UPGRADE_HEIGHT_V5 && !is_valid_decomposed_amount(output.amount)) {
       return error::TransactionValidationError::OUTPUT_INVALID_DECOMPOSED_AMOUNT;
     }
 
@@ -1546,7 +1574,7 @@ std::error_code Core::validateSemantic(const Transaction& transaction, uint64_t&
 
       // additional key_image check
       // Fix discovered by Monero Lab and suggested by "fluffypony" (bitcointalk.org)
-      if (!(scalarmultKey(in.keyImage, L) == I)) {
+      if (!checkpoints.isInCheckpointZone(blockIndex + 1) && !(scalarmultKey(in.keyImage, L) == I)) {
         logger(Logging::ERROR) << "Transaction uses key image not in the valid domain";
         return error::TransactionValidationError::INPUT_INVALID_DOMAIN_KEYIMAGES;
       }
@@ -1581,21 +1609,6 @@ std::error_code Core::validateSemantic(const Transaction& transaction, uint64_t&
   assert(transaction.signatures.size() == transaction.inputs.size());
   fee = summaryInputAmount - summaryOutputAmount;
 
-  CachedTransaction cachedTransaction(std::move(transaction));
-  bool isFusion = fee == 0 && currency.isFusionTransaction(transaction, cachedTransaction.getTransactionBinaryArray().size(), blockIndex);
-  if (!isFusion && !checkpoints.isInCheckpointZone(blockIndex)) {
-    if (blockIndex < CryptoNote::parameters::UPGRADE_HEIGHT_V4) {
-      if (fee < currency.minimumFee()) {
-        return error::TransactionValidationError::INVALID_FEE;
-      }
-    }
-    else {
-      uint64_t minFee = getMinimalFeeForHeight(blockIndex);
-      if (fee < (minFee - (minFee * 20 / 100))) {
-        return error::TransactionValidationError::INVALID_FEE;
-      }
-    }
-  }
   return error::TransactionValidationError::VALIDATION_SUCCESS;
 }
 
