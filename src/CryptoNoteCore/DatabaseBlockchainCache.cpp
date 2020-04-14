@@ -1072,7 +1072,7 @@ PushedBlockInfo DatabaseBlockchainCache::getPushedBlockInfo(uint32_t blockIndex)
 
 bool DatabaseBlockchainCache::checkIfSpent(const Crypto::KeyImage& keyImage, uint32_t blockIndex) const {
   auto batch = BlockchainReadBatch().requestBlockIndexBySpentKeyImage(keyImage);
-  auto res = database.read(batch);
+  auto res = database.readThreadSafe(batch);
   if (res) {
     logger(Logging::ERROR) << "checkIfSpent failed, request to database failed: " << res.message();
     return false;
@@ -1853,6 +1853,53 @@ std::vector<Crypto::Hash> DatabaseBlockchainCache::getBlockHashesByTimestamps(ui
   return blockHashes;
 }
 
+std::vector<RawBlock>
+DatabaseBlockchainCache::getNonEmptyBlocks(const uint64_t startHeight, const size_t blockCount) const {
+  std::vector<RawBlock> orderedBlocks;
+  const uint32_t storageBlockCount = getBlockCount();
+  uint64_t height = startHeight;
+  while (orderedBlocks.size() < blockCount && height < storageBlockCount) {
+    uint64_t startHeight = height;
+
+    /* Lets try taking the amount we need *2, to try and balance not needing
+       multiple DB requests to get the amount we need of non empty blocks, with
+       not taking too many */
+    uint64_t endHeight = startHeight + (blockCount * 2);
+
+    auto blockBatch = BlockchainReadBatch().requestRawBlocks(startHeight, endHeight);
+    const auto rawBlocks = readDatabase(blockBatch).getRawBlocks();
+
+    while (orderedBlocks.size() < blockCount && height < startHeight + rawBlocks.size()) {
+      const auto block = rawBlocks.at(height);
+      height++;
+      if (block.transactions.empty()) {
+        continue;
+      }
+
+      orderedBlocks.push_back(block);
+    }
+  }
+
+  return orderedBlocks;
+}
+
+std::vector<RawBlock>
+DatabaseBlockchainCache::getBlocksByHeight(const uint64_t startHeight, uint64_t endHeight) const {
+  auto blockBatch = BlockchainReadBatch().requestRawBlocks(startHeight, endHeight);
+
+  /* Get the info from the DB */
+  auto rawBlocks = readDatabase(blockBatch).getRawBlocks();
+
+  std::vector<RawBlock> orderedBlocks;
+
+  /* Order, and convert from map, to vector */
+  for (uint64_t height = startHeight; height < startHeight + rawBlocks.size(); height++) {
+    orderedBlocks.push_back(rawBlocks.at(height));
+  }
+
+  return orderedBlocks;
+}
+
 DatabaseBlockchainCache::ExtendedPushedBlockInfo DatabaseBlockchainCache::getExtendedPushedBlockInfo(uint32_t blockIndex) const {
   assert(blockIndex <= getTopBlockIndex());
 
@@ -1872,6 +1919,7 @@ DatabaseBlockchainCache::ExtendedPushedBlockInfo DatabaseBlockchainCache::getExt
 
   ExtendedPushedBlockInfo extendedInfo;
 
+  extendedInfo.pushedBlockInfo.cachedBlock = blockInfo;
   extendedInfo.pushedBlockInfo.rawBlock = dbResult.getRawBlocks().at(blockIndex);
   extendedInfo.pushedBlockInfo.blockSize = blockInfo.blockSize;
   extendedInfo.pushedBlockInfo.blockDifficulty = blockInfo.cumulativeDifficulty - previousBlockInfo.cumulativeDifficulty;

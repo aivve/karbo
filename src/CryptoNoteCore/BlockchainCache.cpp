@@ -691,6 +691,85 @@ size_t BlockchainCache::getTransactionCount() const {
   return count;
 }
 
+std::vector<RawBlock> BlockchainCache::getNonEmptyBlocks(const uint64_t startHeight, const size_t blockCount) const
+{
+  std::vector<RawBlock> blocks;
+
+  if (startHeight < startIndex)
+  {
+    blocks = parent->getNonEmptyBlocks(startHeight, blockCount);
+
+    if (blocks.size() == blockCount)
+    {
+      return blocks;
+    }
+  }
+
+  uint64_t startOffset = std::max(startHeight, static_cast<uint64_t>(startIndex));
+
+  uint64_t storageBlockCount = storage->getBlockCount();
+
+  uint64_t i = startOffset;
+
+  while (blocks.size() < blockCount && i < startIndex + storageBlockCount)
+  {
+    auto block = storage->getBlockByIndex(i - startIndex);
+
+    i++;
+
+    if (block.transactions.empty())
+    {
+      continue;
+    }
+
+    blocks.push_back(block);
+  }
+
+  return blocks;
+}
+
+std::vector<RawBlock> BlockchainCache::getBlocksByHeight(const uint64_t startHeight, uint64_t endHeight) const
+{
+  if (endHeight < startIndex)
+  {
+    return parent->getBlocksByHeight(startHeight, endHeight);
+  }
+
+  std::vector<RawBlock> blocks;
+
+  if (startHeight < startIndex)
+  {
+    blocks = parent->getBlocksByHeight(startHeight, startIndex);
+  }
+
+  uint64_t startOffset = std::max(startHeight, static_cast<uint64_t>(startIndex));
+
+  uint64_t blockCount = storage->getBlockCount();
+
+  /* Make sure we don't overflow the storage (for example, the block might
+     not exist yet) */
+  if (endHeight > startIndex + blockCount)
+  {
+    endHeight = startIndex + blockCount;
+  }
+
+  for (uint64_t i = startOffset; i < endHeight; i++)
+  {
+    blocks.push_back(storage->getBlockByIndex(i - startIndex));
+  }
+
+  logger(Logging::DEBUGGING) << "\n\n"
+    << "\n============================================="
+    << "\n======= GetBlockByHeight (in memory) ========"
+    << "\n* Start height: " << startHeight << "\n* End height: " << endHeight
+    << "\n* Start index: " << startIndex << "\n* Start offset: " << startIndex
+    << "\n* Block count: " << startIndex
+    << "\n============================================="
+    << "\n\n\n";
+
+  return blocks;
+}
+
 RawBlock BlockchainCache::getBlockByIndex(uint32_t index) const {
   return index < startIndex ? parent->getBlockByIndex(index) : storage->getBlockByIndex(index - startIndex);
 }
