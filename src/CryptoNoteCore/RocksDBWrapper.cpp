@@ -34,7 +34,8 @@ namespace {
   const std::string TESTNET_DB_NAME = "testnet_DB";
 }
 
-RocksDBWrapper::RocksDBWrapper(Logging::ILogger& logger) : logger(logger, "RocksDBWrapper"), state(NOT_INITIALIZED){
+RocksDBWrapper::RocksDBWrapper(Logging::ILogger& logger, const DataBaseConfig &config) : 
+  logger(logger, "RocksDBWrapper"), m_config(config), state(NOT_INITIALIZED){
 
 }
 
@@ -42,18 +43,18 @@ RocksDBWrapper::~RocksDBWrapper() {
 
 }
 
-void RocksDBWrapper::init(const DataBaseConfig& config) {
+void RocksDBWrapper::init() {
   if (state.load() != NOT_INITIALIZED) {
     throw std::system_error(make_error_code(CryptoNote::error::DataBaseErrorCodes::ALREADY_INITIALIZED));
   }
   
-  std::string dataDir = getDataDir(config);
+  std::string dataDir = getDataDir(m_config);
 
   logger(INFO) << "Opening DB in " << dataDir;
 
   rocksdb::DB* dbPtr;
 
-  rocksdb::Options dbOptions = getDBOptions(config);
+  rocksdb::Options dbOptions = getDBOptions(m_config);
   rocksdb::Status status = rocksdb::DB::Open(dbOptions, dataDir, &dbPtr);
   if (status.ok()) {
     logger(INFO) << "DB opened in " << dataDir;
@@ -89,16 +90,16 @@ void RocksDBWrapper::shutdown() {
   state.store(NOT_INITIALIZED);
 }
 
-void RocksDBWrapper::destoy(const DataBaseConfig& config) {
+void RocksDBWrapper::destroy() {
   if (state.load() != NOT_INITIALIZED) {
     throw std::system_error(make_error_code(CryptoNote::error::DataBaseErrorCodes::ALREADY_INITIALIZED));
   }
 
-  std::string dataDir = getDataDir(config);
+  std::string dataDir = getDataDir(m_config);
 
   logger(WARNING) << "Destroying DB in " << dataDir;
 
-  rocksdb::Options dbOptions = getDBOptions(config);
+  rocksdb::Options dbOptions = getDBOptions(m_config);
   rocksdb::Status status = rocksdb::DestroyDB(dataDir, dbOptions);
 
   if (status.ok()) {
@@ -181,7 +182,35 @@ std::error_code RocksDBWrapper::read(IReadBatch& batch) {
   return std::error_code();
 }
 
-rocksdb::Options RocksDBWrapper::getDBOptions(const DataBaseConfig& config) {
+std::error_code RocksDBWrapper::readThreadSafe(IReadBatch &batch) {
+  if (state.load() != INITIALIZED) {
+    throw std::runtime_error("Not initialized.");
+  }
+
+  rocksdb::ReadOptions readOptions;
+  std::vector<std::string> rawKeys(batch.getRawKeys());
+  std::vector<std::string> values(rawKeys.size());
+  std::vector<bool> resultStates;
+  int i = 0;
+  for (const std::string &key : rawKeys) {
+    const rocksdb::Status status = db->Get(readOptions, rocksdb::Slice(key), &values[i]);
+    if (status.ok()) {
+      resultStates.push_back(true);
+    } else {
+      if (!status.IsNotFound()) {
+        return make_error_code(CryptoNote::error::DataBaseErrorCodes::INTERNAL_ERROR);
+      }
+
+      resultStates.push_back(false);
+    }
+    i++;
+  }
+
+  batch.submitRawResult(values, resultStates);
+  return std::error_code();
+}
+
+rocksdb::Options RocksDBWrapper::getDBOptions(const DataBaseConfig &config) {
   rocksdb::DBOptions dbOptions;
   dbOptions.IncreaseParallelism(config.getBackgroundThreadsCount());
   dbOptions.info_log_level = rocksdb::InfoLogLevel::WARN_LEVEL;

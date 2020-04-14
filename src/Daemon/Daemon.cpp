@@ -219,13 +219,13 @@ int main(int argc, char* argv[])
     }
 
 	std::cout <<
-"\n                                                   \n"
+"\n"
 "  _|    _|    _|_|    _|_|_|    _|_|_|      _|_|    \n"
 "  _|  _|    _|    _|  _|    _|  _|    _|  _|    _|  \n"
 "  _|_|      _|_|_|_|  _|_|_|    _|_|_|    _|    _|  \n"
 "  _|  _|    _|    _|  _|    _|  _|    _|  _|    _|  \n"
 "  _|    _|  _|    _|  _|    _|  _|_|_|      _|_|    \n"
-"                                                    \n" << ENDL;
+"\n" << ENDL;
 
     logger(INFO) << "Module folder: " << argv[0];
 
@@ -291,18 +291,15 @@ int main(int argc, char* argv[])
       }
     }
 
-    RocksDBWrapper database(logManager);
-    database.init(dbConfig);
+    RocksDBWrapper database(logManager, dbConfig);
+    database.init();
     Tools::ScopeExit dbShutdownOnExit([&database] () { database.shutdown(); });
 
-    if (!DatabaseBlockchainCache::checkDBSchemeVersion(database, logManager))
-    {
+    if (!DatabaseBlockchainCache::checkDBSchemeVersion(database, logManager)) {
       dbShutdownOnExit.cancel();
       database.shutdown();
-
-      database.destoy(dbConfig);
-
-      database.init(dbConfig);
+      database.destroy();
+      database.init();
       dbShutdownOnExit.resume();
     }
 

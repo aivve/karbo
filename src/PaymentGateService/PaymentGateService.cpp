@@ -188,18 +188,16 @@ void PaymentGateService::runInProcess(Logging::LoggerRef& log) {
     }
   }
 
-  CryptoNote::RocksDBWrapper database(logger);
-  database.init(dbConfig);
+  CryptoNote::RocksDBWrapper database(logger, dbConfig);
+  database.init();
   Tools::ScopeExit dbShutdownOnExit([&database] () { database.shutdown(); });
 
   if (!CryptoNote::DatabaseBlockchainCache::checkDBSchemeVersion(database, logger))
   {
     dbShutdownOnExit.cancel();
     database.shutdown();
-
-    database.destoy(dbConfig);
-
-    database.init(dbConfig);
+    database.destroy();
+    database.init();
     dbShutdownOnExit.resume();
   }
 
