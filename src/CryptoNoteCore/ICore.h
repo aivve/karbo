@@ -119,7 +119,7 @@ public:
 
   virtual void rewind(const uint64_t blockIndex) = 0;
 
-  virtual uint64_t getMinimalFeeForHeight(uint32_t height) = 0;
+  virtual uint64_t getMinimalFee(uint32_t height) = 0;
   virtual uint64_t getMinimalFee() = 0;
   virtual bool getMixin(const Transaction& transaction, uint64_t& mixin) = 0;
 

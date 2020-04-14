@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2016-2019, The Karbo developers
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -35,19 +35,21 @@
 #include "IUpgradeManager.h"
 #include <Logging/LoggerMessage.h>
 #include "MessageQueue.h"
-#include "TransactionValidatiorState.h"
+#include "TransactionValidatorState.h"
 #include "SwappedVector.h"
-
+#include "Common/ThreadPool.h"
+#include "Common/ThreadSafeQueue.h"
 #include "CryptoNoteCore/MinerConfig.h"
-
 #include <System/ContextGroup.h>
 
 namespace CryptoNote {
 
+using Utilities::ThreadPool;
+
 class Core : public ICore, public ICoreInformation {
 public:
   Core(const Currency& currency, Logging::ILogger& logger, Checkpoints&& checkpoints, System::Dispatcher& dispatcher,
-       std::unique_ptr<IBlockchainCacheFactory>&& blockchainCacheFactory);
+       std::unique_ptr<IBlockchainCacheFactory>&& blockchainCacheFactory, uint32_t transactionValidationThreads);
   virtual ~Core() override;
 
   virtual bool addMessageQueue(MessageQueue<BlockchainMessage>&  messageQueue) override;
@@ -135,7 +137,7 @@ public:
   uint8_t getBlockMajorVersionForHeight(uint32_t height) const;
   virtual bool getMixin(const Transaction& transaction, uint64_t& mixin) override;
 
-  virtual uint64_t getMinimalFeeForHeight(uint32_t height) override;
+  virtual uint64_t getMinimalFee(uint32_t height) override;
   virtual uint64_t getMinimalFee() override;
 
   bool isKeyImageSpent(const Crypto::KeyImage& key_im);
@@ -158,6 +160,7 @@ private:
 
   IntrusiveLinkedList<MessageQueue<BlockchainMessage>> queueList;
   std::unique_ptr<IBlockchainCacheFactory> blockchainCacheFactory;
+  Utilities::ThreadPool<bool> m_transactionValidationThreadPool;
   bool initialized;
 
   time_t start_time;
@@ -167,10 +170,8 @@ private:
   void throwIfNotInitialized() const;
   bool extractTransactions(const std::vector<BinaryArray>& rawTransactions, std::vector<CachedTransaction>& transactions, uint64_t& cumulativeSize);
 
-  std::error_code validateSemantic(const Transaction& transaction, uint64_t& fee, uint32_t blockIndex);
-  std::error_code validateTransaction(const CachedTransaction& transaction, TransactionValidatorState& state, IBlockchainCache* cache, uint64_t& fee, uint32_t blockIndex);
-  std::error_code validateMixin(const Transaction& transaction, uint32_t blockIndex);
-  std::error_code validateFee(const Transaction& transaction, uint64_t fee, uint32_t blockIndex);
+  std::error_code validateTransaction(const CachedTransaction& transaction, TransactionValidatorState& state, IBlockchainCache* cache, 
+    Utilities::ThreadPool<bool> &threadPool, uint64_t& fee, uint64_t minFee, uint32_t blockIndex, const bool isPoolTransaction);
 
   bool check_tx_inputs_keyimages_diff(const Transaction& tx);
 

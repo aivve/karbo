@@ -19,6 +19,7 @@
 // along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <fstream>
+#include <thread>
 
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
@@ -305,13 +306,16 @@ int main(int argc, char* argv[])
 
     System::Dispatcher dispatcher;
 
+    uint32_t transactionValidationThreads = std::thread::hardware_concurrency();
     logger(INFO) << "Initializing core...";
+    logger(DEBUGGING) << "with " << transactionValidationThreads << " threads for transactions validation";
     CryptoNote::Core ccore(
       currency,
       logManager,
       std::move(checkpoints),
       dispatcher,
-      std::unique_ptr<IBlockchainCacheFactory>(new DatabaseBlockchainCacheFactory(database, logger.getLogger())));
+      std::unique_ptr<IBlockchainCacheFactory>(new DatabaseBlockchainCacheFactory(database, logger.getLogger())),
+      transactionValidationThreads);
     ccore.load();
     logger(INFO) << "Core initialized OK";
 
@@ -320,7 +324,7 @@ int main(int argc, char* argv[])
       if (!rollback_str.empty()) {
         uint32_t _index = 0;
         if (!Common::fromString(rollback_str, _index)) {
-          std::cout << "wrong block index parameter" << ENDL;
+          std::cout << "Wrong block index parameter" << ENDL;
           return false;
         }
         logger(INFO, BRIGHT_YELLOW) << "Rewinding blockchain to height " << _index;

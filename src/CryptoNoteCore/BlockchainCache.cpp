@@ -36,7 +36,7 @@
 #include "CryptoNoteCore/TransactionExtra.h"
 
 #include "Serialization/SerializationOverloads.h"
-#include "TransactionValidatiorState.h"
+#include "TransactionValidatorState.h"
 
 namespace CryptoNote {
 

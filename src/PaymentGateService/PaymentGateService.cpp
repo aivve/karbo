@@ -21,6 +21,7 @@
 #include "PaymentGateService.h"
 
 #include <future>
+#include <thread>
 
 #include "CheckpointsData.h"
 #include "Common/SignalHandler.h"
@@ -210,12 +211,15 @@ void PaymentGateService::runInProcess(Logging::LoggerRef& log) {
 
   log(Logging::INFO) << "initializing core";
 
+  uint32_t transactionValidationThreads = std::thread::hardware_concurrency();
+
   CryptoNote::Core core(
     currency,
     logger,
     std::move(checkpoints),
     *dispatcher,
-    std::unique_ptr<CryptoNote::IBlockchainCacheFactory>(new CryptoNote::DatabaseBlockchainCacheFactory(database, log.getLogger())));
+    std::unique_ptr<CryptoNote::IBlockchainCacheFactory>(new CryptoNote::DatabaseBlockchainCacheFactory(database, log.getLogger())),
+    transactionValidationThreads);
 
   core.load();
 

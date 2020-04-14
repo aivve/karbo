@@ -25,7 +25,7 @@
 #include "CryptoNoteCore/CachedBlock.h"
 #include "CryptoNoteCore/CachedTransaction.h"
 #include "CryptoNoteCore/Difficulty.h"
-#include "CryptoNoteCore/TransactionValidatiorState.h"
+#include "CryptoNoteCore/TransactionValidatorState.h"
 #include "Common/ArrayView.h"
 #include <CryptoNoteCore/Difficulty.h>
 

@@ -795,7 +795,7 @@ bool RpcServer::onGetBocksList(const COMMAND_RPC_GET_BLOCKS_LIST::request& req, 
     block_short.hash = Common::podToHex(b.hash);
     block_short.tx_count = b.transactionsCount;
     block_short.difficulty = b.difficulty;
-    block_short.min_tx_fee = m_core.getMinimalFeeForHeight(i);
+    block_short.min_tx_fee = m_core.getMinimalFee(i);
     
     res.blocks.push_back(block_short);
 
