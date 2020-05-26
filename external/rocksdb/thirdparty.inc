@@ -91,10 +91,10 @@ endif ()
 #
 # Edit these 4 lines to define paths to LZ4
 #
-#set(LZ4_HOME $ENV{THIRDPARTY_HOME}/LZ4.Library)
-#set(LZ4_INCLUDE ${LZ4_HOME}/build/native/inc/inc)
-#set(LZ4_LIB_DEBUG ${LZ4_HOME}/lib/native/debug/amd64/lz4.lib)
-#set(LZ4_LIB_RELEASE ${LZ4_HOME}/lib/native/retail/amd64/lz4.lib)
+set(LZ4_HOME $ENV{THIRDPARTY_HOME}/LZ4.Library)
+set(LZ4_INCLUDE ${LZ4_HOME}/build/native/inc/inc)
+set(LZ4_LIB_DEBUG ${LZ4_HOME}/lib/native/debug/amd64/lz4.lib)
+set(LZ4_LIB_RELEASE ${LZ4_HOME}/lib/native/retail/amd64/lz4.lib)
 
 
 # For compatibility
@@ -190,10 +190,10 @@ endif ()
 #
 # Edit these 4 lines to define paths to ZSTD
 #
-#set(ZSTD_HOME $ENV{THIRDPARTY_HOME}/ZSTD.Library)
-#set(ZSTD_INCLUDE ${ZSTD_HOME}/build/native/inc)
-#set(ZSTD_LIB_DEBUG ${ZSTD_HOME}/lib/native/debug/amd64/libzstd_static.lib)
-#set(ZSTD_LIB_RELEASE ${ZSTD_HOME}/lib/native/retail/amd64/libzstd_static.lib)
+set(ZSTD_HOME ${CMAKE_SOURCE_DIR}/external/zstd/lib)
+set(ZSTD_INCLUDE ${CMAKE_SOURCE_DIR}/external/zstd/lib)
+set(ZSTD_LIB_DEBUG ${ZSTD_HOME}/lib/native/debug/amd64/libzstd_static.lib)
+set(ZSTD_LIB_RELEASE ${CMAKE_BINARY_DIR}/external/zstd/Release/zstd.lib)
 
 # For compatibility
 if (ZSTD)
@@ -218,7 +218,7 @@ if (WITH_ZSTD)
 
   # ZSTD_STATIC_LINKING_ONLY only allows us to create an allocation functions override
   # When jemalloc is in use
-  set(ZSTD_LIBS debug ${ZSTD_LIB_DEBUG} optimized ${ZSTD_LIB_RELEASE})
+  set(ZSTD_LIBS debug ${ZSTD_LIB_DEBUG} optimized zstd.lib)
 
   add_definitions(-DZSTD -DZSTD_STATIC_LINKING_ONLY)
   include_directories(${ZSTD_INCLUDE})

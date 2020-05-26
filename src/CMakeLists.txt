@@ -8,7 +8,6 @@ else()
 endif()
 
 include_directories(${CMAKE_SOURCE_DIR}/external/linenoise)
-include_directories(${CMAKE_SOURCE_DIR}/external/zstd)
 
 file(GLOB_RECURSE BlockchainExplorer BlockchainExplorer/*)
 file(GLOB_RECURSE Checkpoints Checkpoints/*)
