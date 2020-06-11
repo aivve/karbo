@@ -167,11 +167,11 @@ std::unordered_map<std::string, RpcServer::RpcHandler<RpcServer::HandlerFunction
   { "/getrandom_outs.bin", { binMethod<COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS>(&RpcServer::onGetRandomOuts), false } },
   { "/get_pool_changes.bin", { binMethod<COMMAND_RPC_GET_POOL_CHANGES>(&RpcServer::onGetPoolChanges), false } },
   { "/get_pool_changes_lite.bin", { binMethod<COMMAND_RPC_GET_POOL_CHANGES_LITE>(&RpcServer::onGetPoolChangesLite), false } },
-  { "/get_blocks_details_by_hashes.bin", { binMethod<COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HASHES>(&RpcServer::onGetBlocksDetailsByHashes), false } },
+  { "/get_blocks_details_by_hashes.bin", { binMethod<COMMAND_BIN_RPC_GET_BLOCKS_DETAILS_BY_HASHES>(&RpcServer::onBinGetBlocksDetailsByHashes), false } },
   { "/get_blocks_details_by_heights.bin", { binMethod<COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HEIGHTS>(&RpcServer::onGetBlocksDetailsByHeights), false } },
   { "/get_blocks_hashes_by_timestamps.bin", { binMethod<COMMAND_RPC_GET_BLOCKS_HASHES_BY_TIMESTAMPS>(&RpcServer::onGetBlocksHashesByTimestamps), false } },
-  { "/get_transaction_details_by_hashes.bin", { binMethod<COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASHES>(&RpcServer::onGetTransactionDetailsByHashes), false } },
-  { "/get_transaction_hashes_by_payment_id.bin", { binMethod<COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID>(&RpcServer::onGetTransactionHashesByPaymentId), false } },
+  { "/get_transaction_details_by_hashes.bin", { binMethod<COMMAND_BIN_RPC_GET_TRANSACTION_DETAILS_BY_HASHES>(&RpcServer::onBinGetTransactionDetailsByHashes), false } },
+  { "/get_transaction_hashes_by_payment_id.bin", { binMethod<COMMAND_BIN_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID>(&RpcServer::onBinGetTransactionHashesByPaymentId), false } },
 
   // http handlers
   { "/", { httpMethod<COMMAND_HTTP>(&RpcServer::onGetIndex), true } },
@@ -653,6 +653,69 @@ bool RpcServer::onGetPoolChangesLite(const COMMAND_RPC_GET_POOL_CHANGES_LITE::re
   rsp.status = CORE_RPC_STATUS_OK;
   rsp.isTailBlockActual = m_core.getPoolChangesLite(req.tailBlockId, req.knownTxsIds, rsp.addedTxs, rsp.deletedTxsIds);
 
+  return true;
+}
+
+bool RpcServer::onBinGetBlocksDetailsByHashes(const COMMAND_BIN_RPC_GET_BLOCKS_DETAILS_BY_HASHES::request& req, COMMAND_BIN_RPC_GET_BLOCKS_DETAILS_BY_HASHES::response& rsp) {
+  try {
+    std::vector<BlockDetails> blockDetails;
+    for (const Crypto::Hash& hash : req.blockHashes) {
+      blockDetails.push_back(m_core.getBlockDetails(hash));
+    }
+
+    rsp.blocks = std::move(blockDetails);
+  }
+  catch (std::system_error & e) {
+    rsp.status = e.what();
+    return false;
+  }
+  catch (std::exception & e) {
+    rsp.status = "Error: " + std::string(e.what());
+    return false;
+  }
+
+  rsp.status = CORE_RPC_STATUS_OK;
+  return true;
+}
+
+bool RpcServer::onBinGetTransactionDetailsByHashes(const COMMAND_BIN_RPC_GET_TRANSACTION_DETAILS_BY_HASHES::request& req, COMMAND_BIN_RPC_GET_TRANSACTION_DETAILS_BY_HASHES::response& rsp) {
+  try {
+    std::vector<TransactionDetails> transactionDetails;
+    transactionDetails.reserve(req.transactionHashes.size());
+
+    for (const auto& hash : req.transactionHashes) {
+      transactionDetails.push_back(m_core.getTransactionDetails(hash));
+    }
+
+    rsp.transactions = std::move(transactionDetails);
+  }
+  catch (std::system_error & e) {
+    rsp.status = e.what();
+    return false;
+  }
+  catch (std::exception & e) {
+    rsp.status = "Error: " + std::string(e.what());
+    return false;
+  }
+
+  rsp.status = CORE_RPC_STATUS_OK;
+  return true;
+}
+
+bool RpcServer::onBinGetTransactionHashesByPaymentId(const COMMAND_BIN_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID::request& req, COMMAND_BIN_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID::response& rsp) {
+  try {
+    rsp.transactionHashes = m_core.getTransactionHashesByPaymentId(req.paymentId);
+  }
+  catch (std::system_error & e) {
+    rsp.status = e.what();
+    return false;
+  }
+  catch (std::exception & e) {
+    rsp.status = "Error: " + std::string(e.what());
+    return false;
+  }
+
+  rsp.status = CORE_RPC_STATUS_OK;
   return true;
 }
 
