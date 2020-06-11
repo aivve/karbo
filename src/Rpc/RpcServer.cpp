@@ -652,86 +652,30 @@ bool RpcServer::onGetPoolChangesLite(const COMMAND_RPC_GET_POOL_CHANGES_LITE::re
   return true;
 }
 
-
-//
-// HTTP handlers
-//
-
-bool RpcServer::onGetIndex(const COMMAND_HTTP::request& req, COMMAND_HTTP::response& res) {
-  const std::string index_start =
-    R"(<html><head><meta http-equiv='refresh' content='60'/></head><body><p><svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" version="1.1" style="vertical-align:middle; padding-right: 10px; shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd" viewBox="0 0 2500000 2500000" xmlns:xlink="http://www.w3.org/1999/xlink" width="64px" height="64px">
-<g>
-<circle fill="#0AACFC" cx="1250000" cy="1250000" r="1214062" />
-<path fill="#FFED00" d="M1251219 1162750c18009,-3203 34019,-10006 48025,-20412 14009,-10407 27215,-28016 39622,-52029l275750 -538290c10803,-18010 24012,-32419 39218,-43625 15210,-10806 33219,-16410 53232,-16410l174893 0 -343384 633144c-15209,26016 -32419,47228 -51628,63635 -19613,16409 -41225,28815 -64838,37221 36822,9604 67638,25213 92854,47225 24812,21610 48425,52025 70437,91247l330578 668363 -192503 0c-38822,0 -70041,-21213 -93653,-63235l-270947 -566303c-14006,-25215 -29216,-43225 -45622,-54034 -16409,-10803 -37222,-17206 -62034,-18809l0 287359 -151281 0 0 -288559 -111263 0 0 703581 -213716 0 0 -1540835 213716 0 0 673166 111263 0 0 -332981 151281 0 0 330581z"/>
-</g></svg></svg></td><td>)" "karbowanec" R"(d &bull; version 
-)";
-  const std::string index_finish = " </p></body></html>";
-  const std::time_t uptime = std::time(nullptr) - m_core.getStartTime();
-  const std::string uptime_str = std::to_string((unsigned int)floor(uptime / 60.0 / 60.0 / 24.0)) + "d " + std::to_string((unsigned int)floor(fmod((uptime / 60.0 / 60.0), 24.0))) + "h "
-    + std::to_string((unsigned int)floor(fmod((uptime / 60.0), 60.0))) + "m " + std::to_string((unsigned int)fmod(uptime, 60.0)) + "s";
-  uint32_t top_block_index = m_core.getCurrentBlockchainHeight() - 1;
-  uint32_t top_known_block_index = std::max(static_cast<uint32_t>(1), m_protocol.getObservedHeight() - 1);
-  size_t outConn = m_p2p.get_outgoing_connections_count();
-  size_t incConn = m_p2p.get_connections_count() - outConn;
-  Crypto::Hash last_block_hash = m_core.getTopBlockHash();
-  size_t white_peerlist_size = m_p2p.getPeerlistManager().get_white_peers_count();
-  size_t grey_peerlist_size = m_p2p.getPeerlistManager().get_gray_peers_count();
-  size_t alt_blocks_count = m_core.getAlternativeBlocksCount();
-  size_t total_tx_count = m_core.getBlockchainTransactionsCount() - top_block_index + 1;
-  size_t tx_pool_count = m_core.getPoolTransactionsCount();
-
-  const std::string body = index_start + PROJECT_VERSION_LONG + " &bull; " + (m_core.getCurrency().isTestnet() ? "testnet" : "mainnet") +
-    "<ul>" +
-    "<li>" + "Synchronization status: " + std::to_string(top_block_index) + "/" + std::to_string(top_known_block_index) +
-    "<li>" + "Last block hash: " + Common::podToHex(last_block_hash) + "</li>" +
-    "<li>" + "Difficulty: " + std::to_string(m_core.getDifficultyForNextBlock()) + "</li>" +
-    "<li>" + "Alt. blocks: " + std::to_string(alt_blocks_count) + "</li>" +
-    "<li>" + "Total transactions in network: " + std::to_string(total_tx_count) + "</li>" +
-    "<li>" + "Transactions in pool: " + std::to_string(tx_pool_count) + "</li>" +
-    "<li>" + "Connections:" +
-    "<ul>" +
-    "<li>" + "RPC: " + std::to_string(getConnectionsCount()) + "</li>" +
-    "<li>" + "OUT: " + std::to_string(outConn) + "</li>" +
-    "<li>" + "INC: " + std::to_string(incConn) + "</li>" +
-    "</ul>" +
-    "</li>" +
-    "<li>" + "Peers: " + std::to_string(white_peerlist_size) + " white, " + std::to_string(grey_peerlist_size) + " grey" + "</li>" +
-    "<li>" + "Uptime: " + uptime_str + "</li>" +
-    "</ul>" +
-    index_finish;
-
-  res = body;
-
-  return true;
-}
-
-bool RpcServer::onGetSupply(const COMMAND_HTTP::request& req, COMMAND_HTTP::response& res) {
-  std::string already_generated_coins = m_core.getCurrency().formatAmount(m_core.getTotalGeneratedAmount());
-  res = already_generated_coins;
-
-  return true;
-}
-
-bool RpcServer::onGeneratePaymentId(const COMMAND_HTTP::request& req, COMMAND_HTTP::response& res) {
-  Crypto::Hash result;
-  Random::randomBytes(32, result.data);
-  res = Common::podToHex(result);
-
-  return true;
-}
-
-//
-//  Binary handlers
-//
-
 bool RpcServer::onBinGetBlocksDetailsByHeights(const COMMAND_RPC_BIN_GET_BLOCKS_DETAILS_BY_HEIGHTS::request& req, COMMAND_RPC_BIN_GET_BLOCKS_DETAILS_BY_HEIGHTS::response& rsp) {
   try {
-    std::vector<BlockDetails> blockDetails;
-    for (const uint32_t& height : req.blockHeights) {
-      blockDetails.push_back(m_core.getBlockDetails(height));
-    }
+    std::vector<std::vector<BlockDetails>> blocks;
 
-    rsp.blocks = std::move(blockDetails);
+    auto topIndex = m_core.getTopBlockIndex();
+    for (auto index : req.blockHeights) {
+      if (index > topIndex) {
+        throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_TOO_BIG_HEIGHT,
+          std::string("Invalid height: ") + std::to_string(index) + ", current blockchain height = " + std::to_string(topIndex) };
+      }
+      Crypto::Hash hash = m_core.getBlockHashByIndex(index);
+      BlockDetails blockDetails = m_core.getBlockDetails(hash);
+      std::vector<BlockDetails> blocksOnSameIndex;
+      blocksOnSameIndex.push_back(std::move(blockDetails));
+
+      // Getting alternative blocks
+      std::vector<Crypto::Hash> alternativeBlocks = m_core.getAlternativeBlockHashesByIndex(index);
+      for (const auto& alternativeBlockHash : alternativeBlocks) {
+        BlockDetails alternativeBlockDetails = m_core.getBlockDetails(alternativeBlockHash);
+        blocksOnSameIndex.push_back(std::move(alternativeBlockDetails));
+      }
+      blocks.push_back(std::move(blocksOnSameIndex));
+      rsp.blocks = std::move(blocks);
+    }
   }
   catch (std::system_error & e) {
     rsp.status = e.what();
@@ -826,6 +770,74 @@ bool RpcServer::onBinGetTransactionHashesByPaymentId(const COMMAND_RPC_BIN_GET_T
   rsp.status = CORE_RPC_STATUS_OK;
   return true;
 }
+
+//
+// HTTP handlers
+//
+
+bool RpcServer::onGetIndex(const COMMAND_HTTP::request& req, COMMAND_HTTP::response& res) {
+  const std::string index_start =
+    R"(<html><head><meta http-equiv='refresh' content='60'/></head><body><p><svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" version="1.1" style="vertical-align:middle; padding-right: 10px; shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd" viewBox="0 0 2500000 2500000" xmlns:xlink="http://www.w3.org/1999/xlink" width="64px" height="64px">
+<g>
+<circle fill="#0AACFC" cx="1250000" cy="1250000" r="1214062" />
+<path fill="#FFED00" d="M1251219 1162750c18009,-3203 34019,-10006 48025,-20412 14009,-10407 27215,-28016 39622,-52029l275750 -538290c10803,-18010 24012,-32419 39218,-43625 15210,-10806 33219,-16410 53232,-16410l174893 0 -343384 633144c-15209,26016 -32419,47228 -51628,63635 -19613,16409 -41225,28815 -64838,37221 36822,9604 67638,25213 92854,47225 24812,21610 48425,52025 70437,91247l330578 668363 -192503 0c-38822,0 -70041,-21213 -93653,-63235l-270947 -566303c-14006,-25215 -29216,-43225 -45622,-54034 -16409,-10803 -37222,-17206 -62034,-18809l0 287359 -151281 0 0 -288559 -111263 0 0 703581 -213716 0 0 -1540835 213716 0 0 673166 111263 0 0 -332981 151281 0 0 330581z"/>
+</g></svg></svg></td><td>)" "karbowanec" R"(d &bull; version 
+)";
+  const std::string index_finish = " </p></body></html>";
+  const std::time_t uptime = std::time(nullptr) - m_core.getStartTime();
+  const std::string uptime_str = std::to_string((unsigned int)floor(uptime / 60.0 / 60.0 / 24.0)) + "d " + std::to_string((unsigned int)floor(fmod((uptime / 60.0 / 60.0), 24.0))) + "h "
+    + std::to_string((unsigned int)floor(fmod((uptime / 60.0), 60.0))) + "m " + std::to_string((unsigned int)fmod(uptime, 60.0)) + "s";
+  uint32_t top_block_index = m_core.getCurrentBlockchainHeight() - 1;
+  uint32_t top_known_block_index = std::max(static_cast<uint32_t>(1), m_protocol.getObservedHeight() - 1);
+  size_t outConn = m_p2p.get_outgoing_connections_count();
+  size_t incConn = m_p2p.get_connections_count() - outConn;
+  Crypto::Hash last_block_hash = m_core.getTopBlockHash();
+  size_t white_peerlist_size = m_p2p.getPeerlistManager().get_white_peers_count();
+  size_t grey_peerlist_size = m_p2p.getPeerlistManager().get_gray_peers_count();
+  size_t alt_blocks_count = m_core.getAlternativeBlocksCount();
+  size_t total_tx_count = m_core.getBlockchainTransactionsCount() - top_block_index + 1;
+  size_t tx_pool_count = m_core.getPoolTransactionsCount();
+
+  const std::string body = index_start + PROJECT_VERSION_LONG + " &bull; " + (m_core.getCurrency().isTestnet() ? "testnet" : "mainnet") +
+    "<ul>" +
+    "<li>" + "Synchronization status: " + std::to_string(top_block_index) + "/" + std::to_string(top_known_block_index) +
+    "<li>" + "Last block hash: " + Common::podToHex(last_block_hash) + "</li>" +
+    "<li>" + "Difficulty: " + std::to_string(m_core.getDifficultyForNextBlock()) + "</li>" +
+    "<li>" + "Alt. blocks: " + std::to_string(alt_blocks_count) + "</li>" +
+    "<li>" + "Total transactions in network: " + std::to_string(total_tx_count) + "</li>" +
+    "<li>" + "Transactions in pool: " + std::to_string(tx_pool_count) + "</li>" +
+    "<li>" + "Connections:" +
+    "<ul>" +
+    "<li>" + "RPC: " + std::to_string(getConnectionsCount()) + "</li>" +
+    "<li>" + "OUT: " + std::to_string(outConn) + "</li>" +
+    "<li>" + "INC: " + std::to_string(incConn) + "</li>" +
+    "</ul>" +
+    "</li>" +
+    "<li>" + "Peers: " + std::to_string(white_peerlist_size) + " white, " + std::to_string(grey_peerlist_size) + " grey" + "</li>" +
+    "<li>" + "Uptime: " + uptime_str + "</li>" +
+    "</ul>" +
+    index_finish;
+
+  res = body;
+
+  return true;
+}
+
+bool RpcServer::onGetSupply(const COMMAND_HTTP::request& req, COMMAND_HTTP::response& res) {
+  std::string already_generated_coins = m_core.getCurrency().formatAmount(m_core.getTotalGeneratedAmount());
+  res = already_generated_coins;
+
+  return true;
+}
+
+bool RpcServer::onGeneratePaymentId(const COMMAND_HTTP::request& req, COMMAND_HTTP::response& res) {
+  Crypto::Hash result;
+  Random::randomBytes(32, result.data);
+  res = Common::podToHex(result);
+
+  return true;
+}
+
 
 //
 // JSON handlers

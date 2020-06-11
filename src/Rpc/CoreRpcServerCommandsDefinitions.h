@@ -915,7 +915,7 @@ struct COMMAND_RPC_BIN_GET_BLOCKS_DETAILS_BY_HEIGHTS {
   };
 
   struct response {
-    std::vector<BlockDetails> blocks;
+    std::vector<std::vector<BlockDetails>> blocks;
     std::string status;
 
     void serialize(ISerializer& s) {
