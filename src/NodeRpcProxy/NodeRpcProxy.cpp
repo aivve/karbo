@@ -894,8 +894,8 @@ std::error_code NodeRpcProxy::doGetBlocksByHeights(const std::vector<uint32_t>& 
 }
 
 std::error_code NodeRpcProxy::doGetBlocksByHashes(const std::vector<Crypto::Hash>& blockHashes, std::vector<BlockDetails>& blocks) {
-  COMMAND_RPC_BIN_GET_BLOCKS_DETAILS_BY_HASHES::request req = AUTO_VAL_INIT(req);
-  COMMAND_RPC_BIN_GET_BLOCKS_DETAILS_BY_HASHES::response resp = AUTO_VAL_INIT(resp);
+  COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HASHES::request req = AUTO_VAL_INIT(req);
+  COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HASHES::response resp = AUTO_VAL_INIT(resp);
 
   req.blockHashes = blockHashes;
 
@@ -926,8 +926,8 @@ std::error_code NodeRpcProxy::doGetBlock(const uint32_t blockHeight, BlockDetail
 }
 
 std::error_code NodeRpcProxy::doGetTransactionHashesByPaymentId(const Crypto::Hash& paymentId, std::vector<Crypto::Hash>& transactionHashes) {
-  COMMAND_RPC_BIN_GET_TRANSACTION_HASHES_BY_PAYMENT_ID::request req = AUTO_VAL_INIT(req);
-  COMMAND_RPC_BIN_GET_TRANSACTION_HASHES_BY_PAYMENT_ID::response resp = AUTO_VAL_INIT(resp);
+  COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID::request req = AUTO_VAL_INIT(req);
+  COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID::response resp = AUTO_VAL_INIT(resp);
 
   req.paymentId = paymentId;
   std::error_code ec = binaryCommand("/get_transaction_hashes_by_payment_id.bin", req, resp);
@@ -969,8 +969,8 @@ std::error_code NodeRpcProxy::doGetTransaction(const Crypto::Hash& transactionHa
 }
 
 std::error_code NodeRpcProxy::doGetTransactions(const std::vector<Crypto::Hash>& transactionHashes, std::vector<TransactionDetails>& transactions) {
-  COMMAND_RPC_BIN_GET_TRANSACTION_DETAILS_BY_HASHES::request req = AUTO_VAL_INIT(req);
-  COMMAND_RPC_BIN_GET_TRANSACTION_DETAILS_BY_HASHES::response resp = AUTO_VAL_INIT(resp);
+  COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASHES::request req = AUTO_VAL_INIT(req);
+  COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASHES::response resp = AUTO_VAL_INIT(resp);
 
   req.transactionHashes = transactionHashes;
   std::error_code ec = binaryCommand("/get_transaction_details_by_hashes.bin", req, resp);

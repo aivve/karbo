@@ -156,7 +156,7 @@ RpcServer::HandlerFunction httpMethod(bool (RpcServer::*handler)(typename Comman
 }
 
 }
-  
+
 std::unordered_map<std::string, RpcServer::RpcHandler<RpcServer::HandlerFunction>> RpcServer::s_handlers = {
   
   // binary handlers
@@ -167,11 +167,11 @@ std::unordered_map<std::string, RpcServer::RpcHandler<RpcServer::HandlerFunction
   { "/getrandom_outs.bin", { binMethod<COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS>(&RpcServer::onGetRandomOuts), false } },
   { "/get_pool_changes.bin", { binMethod<COMMAND_RPC_GET_POOL_CHANGES>(&RpcServer::onGetPoolChanges), false } },
   { "/get_pool_changes_lite.bin", { binMethod<COMMAND_RPC_GET_POOL_CHANGES_LITE>(&RpcServer::onGetPoolChangesLite), false } },
-  { "/get_blocks_details_by_hashes.bin", { binMethod<COMMAND_RPC_BIN_GET_BLOCKS_DETAILS_BY_HASHES>(&RpcServer::onBinGetBlocksDetailsByHashes), false } },
-  { "/get_blocks_details_by_heights.bin", { binMethod<COMMAND_RPC_BIN_GET_BLOCKS_DETAILS_BY_HEIGHTS>(&RpcServer::onBinGetBlocksDetailsByHeights), false } },
-  { "/get_blocks_hashes_by_timestamps.bin", { binMethod<COMMAND_RPC_BIN_GET_BLOCKS_HASHES_BY_TIMESTAMPS>(&RpcServer::onBinGetBlocksHashesByTimestamps), false } },
-  { "/get_transaction_details_by_hashes.bin", { binMethod<COMMAND_RPC_BIN_GET_TRANSACTION_DETAILS_BY_HASHES>(&RpcServer::onBinGetTransactionDetailsByHashes), false } },
-  { "/get_transaction_hashes_by_payment_id.bin", { binMethod<COMMAND_RPC_BIN_GET_TRANSACTION_HASHES_BY_PAYMENT_ID>(&RpcServer::onBinGetTransactionHashesByPaymentId), false } },
+  { "/get_blocks_details_by_hashes.bin", { binMethod<COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HASHES>(&RpcServer::onGetBlocksDetailsByHashes), false } },
+  { "/get_blocks_details_by_heights.bin", { binMethod<COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HEIGHTS>(&RpcServer::onGetBlocksDetailsByHeights), false } },
+  { "/get_blocks_hashes_by_timestamps.bin", { binMethod<COMMAND_RPC_GET_BLOCKS_HASHES_BY_TIMESTAMPS>(&RpcServer::onGetBlocksHashesByTimestamps), false } },
+  { "/get_transaction_details_by_hashes.bin", { binMethod<COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASHES>(&RpcServer::onGetTransactionDetailsByHashes), false } },
+  { "/get_transaction_hashes_by_payment_id.bin", { binMethod<COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID>(&RpcServer::onGetTransactionHashesByPaymentId), false } },
 
   // http handlers
   { "/", { httpMethod<COMMAND_HTTP>(&RpcServer::onGetIndex), true } },
@@ -321,9 +321,13 @@ void RpcServer::processRequest(const HttpRequest& request, HttpResponse& respons
           return;
         }
         COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID::request req;
-        req.paymentId = pid_str;
+        bool r = Common::podFromHex(pid_str, req.paymentId);
         COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID::response rsp;
-        bool r = onGetTransactionHashesByPaymentId(req, rsp);
+        if (r) {
+          response.setStatus(HttpResponse::STATUS_400);
+          response.setBody("Bad request");
+        }
+        r = onGetTransactionHashesByPaymentId(req, rsp);
         if (r) {
           response.addHeader("Content-Type", "application/json");
           response.setStatus(HttpResponse::HTTP_STATUS::STATUS_200);
@@ -720,112 +724,6 @@ bool RpcServer::onGeneratePaymentId(const COMMAND_HTTP::request& req, COMMAND_HT
   return true;
 }
 
-//
-//  Binary handlers
-//
-
-bool RpcServer::onBinGetBlocksDetailsByHeights(const COMMAND_RPC_BIN_GET_BLOCKS_DETAILS_BY_HEIGHTS::request& req, COMMAND_RPC_BIN_GET_BLOCKS_DETAILS_BY_HEIGHTS::response& rsp) {
-  try {
-    std::vector<BlockDetails> blockDetails;
-    for (const uint32_t& height : req.blockHeights) {
-      blockDetails.push_back(m_core.getBlockDetails(height));
-    }
-
-    rsp.blocks = std::move(blockDetails);
-  }
-  catch (std::system_error & e) {
-    rsp.status = e.what();
-    return false;
-  }
-  catch (std::exception & e) {
-    rsp.status = "Error: " + std::string(e.what());
-    return false;
-  }
-
-  rsp.status = CORE_RPC_STATUS_OK;
-  return true;
-}
-
-bool RpcServer::onBinGetBlocksDetailsByHashes(const COMMAND_RPC_BIN_GET_BLOCKS_DETAILS_BY_HASHES::request& req, COMMAND_RPC_BIN_GET_BLOCKS_DETAILS_BY_HASHES::response& rsp) {
-  try {
-    std::vector<BlockDetails> blockDetails;
-    for (const Crypto::Hash& hash : req.blockHashes) {
-      blockDetails.push_back(m_core.getBlockDetails(hash));
-    }
-
-    rsp.blocks = std::move(blockDetails);
-  }
-  catch (std::system_error & e) {
-    rsp.status = e.what();
-    return false;
-  }
-  catch (std::exception & e) {
-    rsp.status = "Error: " + std::string(e.what());
-    return false;
-  }
-
-  rsp.status = CORE_RPC_STATUS_OK;
-  return true;
-}
-
-bool RpcServer::onBinGetBlocksHashesByTimestamps(const COMMAND_RPC_BIN_GET_BLOCKS_HASHES_BY_TIMESTAMPS::request& req, COMMAND_RPC_BIN_GET_BLOCKS_HASHES_BY_TIMESTAMPS::response& rsp) {
-  try {
-    auto blockHashes = m_core.getBlockHashesByTimestamps(req.timestampBegin, req.secondsCount);
-    rsp.blockHashes = std::move(blockHashes);
-  }
-  catch (std::system_error & e) {
-    rsp.status = e.what();
-    return false;
-  }
-  catch (std::exception & e) {
-    rsp.status = "Error: " + std::string(e.what());
-    return false;
-  }
-
-  rsp.status = CORE_RPC_STATUS_OK;
-  return true;
-}
-
-bool RpcServer::onBinGetTransactionDetailsByHashes(const COMMAND_RPC_BIN_GET_TRANSACTION_DETAILS_BY_HASHES::request& req, COMMAND_RPC_BIN_GET_TRANSACTION_DETAILS_BY_HASHES::response& rsp) {
-  try {
-    std::vector<TransactionDetails> transactionDetails;
-    transactionDetails.reserve(req.transactionHashes.size());
-
-    for (const auto& hash : req.transactionHashes) {
-      transactionDetails.push_back(m_core.getTransactionDetails(hash));
-    }
-
-    rsp.transactions = std::move(transactionDetails);
-  }
-  catch (std::system_error & e) {
-    rsp.status = e.what();
-    return false;
-  }
-  catch (std::exception & e) {
-    rsp.status = "Error: " + std::string(e.what());
-    return false;
-  }
-
-  rsp.status = CORE_RPC_STATUS_OK;
-  return true;
-}
-
-bool RpcServer::onBinGetTransactionHashesByPaymentId(const COMMAND_RPC_BIN_GET_TRANSACTION_HASHES_BY_PAYMENT_ID::request& req, COMMAND_RPC_BIN_GET_TRANSACTION_HASHES_BY_PAYMENT_ID::response& rsp) {
-  try {
-    rsp.transactionHashes = m_core.getTransactionHashesByPaymentId(req.paymentId);
-  }
-  catch (std::system_error & e) {
-    rsp.status = e.what();
-    return false;
-  }
-  catch (std::exception & e) {
-    rsp.status = "Error: " + std::string(e.what());
-    return false;
-  }
-
-  rsp.status = CORE_RPC_STATUS_OK;
-  return true;
-}
 
 //
 // JSON handlers
@@ -964,18 +862,14 @@ bool RpcServer::onGetTransactionDetailsByHash(const COMMAND_RPC_GET_TRANSACTION_
 }
 
 bool RpcServer::onGetTransactionHashesByPaymentId(const COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID::request& req, COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID::response& rsp) {
-  Crypto::Hash pid_hash;
-  if (!parse_hash256(req.paymentId, pid_hash)) {
-    throw JsonRpc::JsonRpcError{
-      CORE_RPC_ERROR_CODE_WRONG_PARAM,
-      "Failed to parse hex representation of payment id. Hex = " + req.paymentId + '.' };
-  }
   try {
-    rsp.transactionHashes = m_core.getTransactionHashesByPaymentId(pid_hash);
-  } catch (std::system_error& e) {
+    rsp.transactionHashes = m_core.getTransactionHashesByPaymentId(req.paymentId);
+  }
+  catch (std::system_error & e) {
     rsp.status = e.what();
     return false;
-  } catch (std::exception& e) {
+  }
+  catch (std::exception & e) {
     rsp.status = "Error: " + std::string(e.what());
     return false;
   }

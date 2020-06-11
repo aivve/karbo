@@ -27,6 +27,8 @@ const char* getStatusString(CryptoNote::HttpResponse::HTTP_STATUS status) {
   switch (status) {
   case CryptoNote::HttpResponse::STATUS_200:
     return "200 OK";
+  case CryptoNote::HttpResponse::STATUS_400:
+    return "400 Bad Request";
   case CryptoNote::HttpResponse::STATUS_401:
     return "401 Unauthorized";
   case CryptoNote::HttpResponse::STATUS_404:
