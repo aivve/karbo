@@ -40,12 +40,15 @@
 #include "TransactionValidatorState.h"
 #include "SwappedVector.h"
 #include "Common/ThreadPool.h"
+#include "CryptoNoteCore/IMinerHandler.h"
 #include "CryptoNoteCore/MinerConfig.h"
 #include <System/ContextGroup.h>
 
 namespace CryptoNote {
 
 using Utilities::ThreadPool;
+
+//class miner;
 
 class Core : public ICore, public ICoreInformation {
 public:
@@ -103,6 +106,8 @@ public:
   virtual bool getPoolChangesLite(const Crypto::Hash& lastBlockHash, const std::vector<Crypto::Hash>& knownHashes, std::vector<TransactionPrefixInfo>& addedTransactions,
     std::vector<Crypto::Hash>& deletedTransactions) const override;
 
+  //IMinerHandler
+  virtual bool handleBlockFound(BlockTemplate& b); //override;
   virtual bool getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, const BinaryArray& extraNonce, Difficulty& difficulty, uint32_t& height) const override;
 
   virtual CoreStatistics getCoreStatistics() const override;
@@ -155,6 +160,7 @@ public:
 
   virtual bool checkProofOfWork(Crypto::cn_context& context, const CachedBlock& block, Difficulty currentDifficulty) override;
   virtual bool getBlockLongHash(Crypto::cn_context &context, const CachedBlock& b, Crypto::Hash& res) override;
+
 private:
   const Currency& currency;
   System::Dispatcher& dispatcher;
@@ -167,6 +173,7 @@ private:
   std::vector<IBlockchainCache*> chainsLeaves;
   std::unique_ptr<ITransactionPoolCleanWrapper> transactionPool;
   std::unordered_set<IBlockchainCache*> mainChainSet;
+  // std::unique_ptr<miner> m_miner;
 
   std::string dataFolder;
 
@@ -184,6 +191,9 @@ private:
 
   std::error_code validateTransaction(const CachedTransaction& transaction, TransactionValidatorState& state, IBlockchainCache* cache, 
     Utilities::ThreadPool<bool> &threadPool, uint64_t& fee, uint64_t minFee, uint32_t blockIndex, const bool isPoolTransaction);
+
+  bool update_miner_block_template();
+  bool on_update_blocktemplate_interval();
 
   uint32_t findBlockchainSupplement(const std::vector<Crypto::Hash>& remoteBlockIds) const;
   std::vector<Crypto::Hash> getBlockHashes(uint32_t startBlockIndex, uint32_t maxCount) const;
