@@ -23,6 +23,7 @@
 #include <CryptoTypes.h>
 #include "generic-ops.h"
 #include <boost/align/aligned_alloc.hpp>
+#include "yespower.h"
 
 /* Standard Cryptonight */
 #define CN_PAGE_SIZE                    2097152
@@ -75,6 +76,21 @@ namespace Crypto {
   void cn_slow_hash(cn_context &context, const void *data, size_t length, Hash &hash);
   void cn_slow_hash_gpu(cn_context &context, const void *data, size_t length, Hash &hash);
   void cn_slow_hash_krb(cn_context &context, const void *data, size_t length, Hash &hash);
+
+  inline bool y_slow_hash(const void* data, size_t length, Hash& seed, Hash& hash) {
+    static const yespower_params_t yespower_params = {
+      2048,
+      32,
+      seed.data,
+      sizeof(seed)
+    };
+
+    if (yespower_tls(reinterpret_cast<uint8_t*>(&data), length, &yespower_params, reinterpret_cast<yespower_binary_t*>(&hash))) {
+      return false;
+    }
+
+    return true;
+  }
 
   inline void tree_hash(const Hash *hashes, size_t count, Hash &root_hash) {
     tree_hash(reinterpret_cast<const char (*)[HASH_SIZE]>(hashes), count, reinterpret_cast<char *>(&root_hash));

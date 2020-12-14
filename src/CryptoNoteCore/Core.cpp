@@ -580,7 +580,7 @@ bool Core::getBlockLongHash(Crypto::cn_context &context, const CachedBlock& b, C
 
   // Phase 2
 
-  // throw our block into common pot
+  // Throw our block into common pot
   pot.insert(std::end(pot), std::begin(bd), std::end(bd));
 
   // Get the corresponding 8 blocks from blockchain based on preparatory hash_1
@@ -611,8 +611,8 @@ bool Core::getBlockLongHash(Crypto::cn_context &context, const CachedBlock& b, C
 
   // Phase 3
 
-  // stir the pot - hashing the 1 + 8 blocks as one continuous data
-  Crypto::cn_slow_hash(context, pot.data(), pot.size(), hash_2);
+  // Stir the pot - hashing the 1 + 8 blocks as one continuous data
+  Crypto::y_slow_hash(pot.data(), pot.size(), hash_1, hash_2);
 
   res = hash_2;
 
