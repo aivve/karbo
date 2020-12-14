@@ -1,6 +1,5 @@
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2018, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2017, The Monero Project
-// Copyright (c) 2018-2019, The TurtleCoin Developers
 // Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
@@ -104,6 +103,16 @@ namespace Crypto {
     return ge_frombytes_vartime(&point, reinterpret_cast<const unsigned char*>(&key)) == 0;
   }
 
+  bool crypto_ops::secret_key_to_public_key(const SecretKey &sec, PublicKey &pub) {
+    ge_p3 point;
+    if (sc_check(reinterpret_cast<const unsigned char*>(&sec)) != 0) {
+      return false;
+    }
+    ge_scalarmult_base(&point, reinterpret_cast<const unsigned char*>(&sec));
+    ge_p3_tobytes(reinterpret_cast<unsigned char*>(&pub), &point);
+    return true;
+  }
+
   bool crypto_ops::secret_key_mult_public_key(const SecretKey &sec, const PublicKey &pub, PublicKey &result) {
     if (sc_check(&sec) != 0) {
       return false;
@@ -115,16 +124,6 @@ namespace Crypto {
     ge_p2 point2;
     ge_scalarmult(&point2, &sec, &point);
     ge_tobytes(reinterpret_cast<unsigned char*>(&result), &point2);
-    return true;
-  }
-
-  bool crypto_ops::secret_key_to_public_key(const SecretKey &sec, PublicKey &pub) {
-    ge_p3 point;
-    if (sc_check(reinterpret_cast<const unsigned char*>(&sec)) != 0) {
-      return false;
-    }
-    ge_scalarmult_base(&point, reinterpret_cast<const unsigned char*>(&sec));
-    ge_p3_tobytes(reinterpret_cast<unsigned char*>(&pub), &point);
     return true;
   }
 
@@ -597,7 +596,7 @@ namespace Crypto {
 
   bool crypto_ops::check_ring_signature(const Hash &prefix_hash, const KeyImage &image,
     const PublicKey *const *pubs, size_t pubs_count,
-    const Signature *sig, bool checkKeyImage) {
+    const Signature *sig) {
     size_t i;
     ge_p3 image_unp;
     ge_dsmp image_pre;
@@ -612,9 +611,6 @@ namespace Crypto {
       return false;
     }
     ge_dsm_precomp(image_pre, &image_unp);
-    if (checkKeyImage && ge_check_subgroup_precomp_vartime(image_pre) != 0) {
-      return false;
-    }
     sc_0(reinterpret_cast<unsigned char*>(&sum));
     buf->h = prefix_hash;
     for (i = 0; i < pubs_count; i++) {
@@ -637,4 +633,5 @@ namespace Crypto {
     sc_sub(reinterpret_cast<unsigned char*>(&h), reinterpret_cast<unsigned char*>(&h), reinterpret_cast<unsigned char*>(&sum));
     return sc_isnonzero(reinterpret_cast<unsigned char*>(&h)) == 0;
   }
+
 }
