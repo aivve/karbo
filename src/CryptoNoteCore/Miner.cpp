@@ -349,7 +349,7 @@ namespace CryptoNote
       CachedBlock cb(b);
       if (!m_stop) {
         if (!m_handler.getBlockLongHash(context, cb, h)) {
-          logger(ERROR) << "getBlockLongHash failed."
+          logger(ERROR) << "getBlockLongHash failed.";
           m_stop = true;
         }
       }
