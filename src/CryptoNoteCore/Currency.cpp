@@ -718,7 +718,7 @@ Difficulty Currency::nextDifficultyV5(uint32_t height, uint8_t blockMajorVersion
 
   // reset difficulty for new epoch
   if (height == upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) + 1) {
-    return 1000000; //return (cumulativeDifficulties[0] - cumulativeDifficulties[1]) / RESET_WORK_FACTOR;
+    return 10000; //return (cumulativeDifficulties[0] - cumulativeDifficulties[1]) / RESET_WORK_FACTOR;
   }
   uint32_t count = (uint32_t)difficultyBlocksCountByBlockVersion(blockMajorVersion);
   if (height > upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) && height < CryptoNote::parameters::UPGRADE_HEIGHT_V5 + count) {
