@@ -162,7 +162,7 @@ namespace CryptoNote
       if(m_do_print_hashrate) {
         uint64_t total_hr = std::accumulate(m_last_hash_rates.begin(), m_last_hash_rates.end(), static_cast<uint64_t>(0));
         float hr = static_cast<float>(total_hr)/static_cast<float>(m_last_hash_rates.size());
-        std::cout << "hashrate: " << std::setprecision(4) << std::fixed << hr << ENDL;
+        std::cout << "Hashrate: " << std::setprecision(2) << std::fixed << hr << "        \r";
       }
     }
     
@@ -359,7 +359,12 @@ namespace CryptoNote
         //we lucky!
         ++m_config.current_extra_message_index;
 
-        logger(INFO, GREEN) << "Found block for difficulty: " << local_diff;
+        logger(INFO, GREEN) << "Found block for difficulty: "
+          << local_diff
+          << " at height " << cb.getBlockIndex()
+          << " v. " << (int)b.majorVersion << "\r\n"
+          << " pow: " << Common::podToHex(h) << "\r\n"
+          << "hash: " << Common::podToHex(cb.getBlockHash());
 
         if(!m_handler.handleBlockFound(b)) {
           --m_config.current_extra_message_index;
