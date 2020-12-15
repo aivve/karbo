@@ -167,6 +167,7 @@ public:
 
   virtual bool checkProofOfWork(Crypto::cn_context& context, const CachedBlock& block, Difficulty currentDifficulty) override;
   virtual bool getBlockLongHash(Crypto::cn_context &context, const CachedBlock& b, Crypto::Hash& res) override;
+
 private:
   const Currency& currency;
   System::Dispatcher& dispatcher;

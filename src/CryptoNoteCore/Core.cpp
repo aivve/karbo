@@ -616,7 +616,7 @@ bool Core::getBlockLongHash(Crypto::cn_context &context, const CachedBlock& b, C
   // Phase 3
 
   // stir the pot - hashing the 1 + 8 blocks as one continuous data
-  Crypto::cn_slow_hash(context, pot.data(), pot.size(), hash_2);
+  Crypto::y_slow_hash(pot.data(), pot.size(), hash_1, hash_2);
 
   res = hash_2;
 

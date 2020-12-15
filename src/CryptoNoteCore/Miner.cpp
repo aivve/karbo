@@ -348,10 +348,8 @@ namespace CryptoNote
 
       CachedBlock cb(b);
       if (!m_stop) {
-        try {
-          h = cb.getBlockLongHash(context);
-        } catch (std::exception& e) {
-          logger(ERROR) << "getBlockLongHash failed: " << e.what();
+        if (!m_handler.getBlockLongHash(context, cb, h)) {
+          logger(ERROR) << "getBlockLongHash failed.";
           m_stop = true;
         }
       }
