@@ -720,7 +720,7 @@ bool CryptoNoteProtocolHandler::on_idle() {
   m_dandelionStemSelectInterval.call([&]() { return select_dandelion_stem(); });
   m_dandelionStemFluffInterval.call([&]() { return fluffStemPool(); });
 
-  return true;
+  return m_core.on_idle();
 }
 
 int CryptoNoteProtocolHandler::doPushLiteBlock(NOTIFY_NEW_LITE_BLOCK::request arg, CryptoNoteConnectionContext &context, std::vector<BinaryArray> missingTxs)

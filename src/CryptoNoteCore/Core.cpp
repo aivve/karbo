@@ -1103,6 +1103,12 @@ void Core::notifyOnSuccess(error::AddBlockErrorCode opResult, uint32_t previousB
   }
 }
 
+bool Core::on_idle() {
+  m_miner->on_idle();
+
+  return true;
+}
+
 void Core::pauseMining() {
   m_miner->pause();
 }

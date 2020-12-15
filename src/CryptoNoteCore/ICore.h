@@ -120,6 +120,7 @@ public:
   virtual void save() = 0;
   virtual void load(const MinerConfig& minerConfig) = 0;
 
+  virtual bool on_idle() = 0;
   virtual void pauseMining() = 0;
   virtual void updateBlockTemplateAndResumeMining() = 0;
   virtual void onSynchronized() = 0;

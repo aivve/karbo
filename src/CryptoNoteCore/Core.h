@@ -112,6 +112,7 @@ public:
 
   miner& get_miner() { return *m_miner; }
 
+  bool on_idle() override;
   void pauseMining() override;
   void updateBlockTemplateAndResumeMining() override;
   void onSynchronized() override;
