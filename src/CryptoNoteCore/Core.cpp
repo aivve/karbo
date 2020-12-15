@@ -577,7 +577,7 @@ bool Core::getBlockLongHash(Crypto::cn_context &context, const CachedBlock& b, C
 
   // Phase 1
 
-  Crypto::Hash hash_1, hash_2;
+  Crypto::Hash hash_1;
 
   // Hashing the current blockdata (preprocessing it)
   cn_fast_hash(bd.data(), bd.size(), hash_1);
@@ -616,11 +616,7 @@ bool Core::getBlockLongHash(Crypto::cn_context &context, const CachedBlock& b, C
   // Phase 3
 
   // stir the pot - hashing the 1 + 8 blocks as one continuous data
-  Crypto::y_slow_hash(pot.data(), pot.size(), hash_1, hash_2);
-
-  res = hash_2;
-
-  return true;
+  return Crypto::y_slow_hash(pot.data(), pot.size(), hash_1, res);
 }
 
 // Calculate ln(p) of Poisson distribution
