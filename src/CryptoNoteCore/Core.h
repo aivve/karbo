@@ -48,9 +48,9 @@ namespace CryptoNote {
 
 using Utilities::ThreadPool;
 
-//class miner;
+class miner;
 
-class Core : public ICore, public ICoreInformation {
+class Core : public ICore, public IMinerHandler, public ICoreInformation {
 public:
   Core(const Currency& currency, Logging::ILogger& logger, Checkpoints&& checkpoints, System::Dispatcher& dispatcher,
        std::unique_ptr<IBlockchainCacheFactory>&& blockchainCacheFactory, uint32_t transactionValidationThreads);
@@ -110,6 +110,8 @@ public:
   virtual bool handleBlockFound(BlockTemplate& b); //override;
   virtual bool getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, const BinaryArray& extraNonce, Difficulty& difficulty, uint32_t& height) const override;
 
+  miner& get_miner() { return *m_miner; }
+
   virtual CoreStatistics getCoreStatistics() const override;
   
   virtual std::time_t getStartTime() const;
@@ -131,7 +133,7 @@ public:
   const Currency& getCurrency() const;
 
   virtual void save() override;
-  virtual void load() override;
+  virtual void load(const MinerConfig& minerConfig) override;
 
   virtual BlockDetails getBlockDetails(const Crypto::Hash& blockHash) const override;
   virtual BlockDetails getBlockDetails(const uint32_t blockHeight, const uint32_t attempt = 0) const override;
@@ -173,7 +175,7 @@ private:
   std::vector<IBlockchainCache*> chainsLeaves;
   std::unique_ptr<ITransactionPoolCleanWrapper> transactionPool;
   std::unordered_set<IBlockchainCache*> mainChainSet;
-  // std::unique_ptr<miner> m_miner;
+  std::unique_ptr<miner> m_miner;
 
   std::string dataFolder;
 

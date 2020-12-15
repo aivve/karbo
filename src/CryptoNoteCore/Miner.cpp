@@ -114,7 +114,7 @@ namespace CryptoNote
       extra_nonce = m_extra_messages[m_config.current_extra_message_index];
     }
 
-    if(!m_handler.getBlockTemplate(bl, m_mine_address, di, height, extra_nonce)) {
+    if(!m_handler.getBlockTemplate(bl, m_mine_address, extra_nonce, di, height)) {
       logger(ERROR) << "Failed to getBlockTemplate(), stopping mining";
       return false;
     }
