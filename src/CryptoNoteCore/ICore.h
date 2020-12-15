@@ -120,6 +120,10 @@ public:
   virtual void save() = 0;
   virtual void load(const MinerConfig& minerConfig) = 0;
 
+  virtual void pauseMining() = 0;
+  virtual void updateBlockTemplateAndResumeMining() = 0;
+  virtual void onSynchronized() = 0;
+
   virtual BlockDetails getBlockDetails(const Crypto::Hash& blockHash) const = 0;
   virtual BlockDetails getBlockDetails(const uint32_t blockHeight, const uint32_t attempt = 0) const = 0;
   virtual BlockDetailsShort getBlockDetailsLite(const Crypto::Hash& blockHash) const = 0;

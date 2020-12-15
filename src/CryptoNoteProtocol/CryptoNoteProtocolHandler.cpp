@@ -925,6 +925,8 @@ bool CryptoNoteProtocolHandler::on_connection_synchronized() {
       << "Use \"help\" command to see the list of available commands." << ENDL
       << "**********************************************************************" << ENDL;
 
+    m_core.onSynchronized();
+
     m_observerManager.notify(&ICryptoNoteProtocolObserver::blockchainSynchronized, m_core.getTopBlockIndex());
   }
   return true;

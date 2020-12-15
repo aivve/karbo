@@ -112,6 +112,10 @@ public:
 
   miner& get_miner() { return *m_miner; }
 
+  void pauseMining() override;
+  void updateBlockTemplateAndResumeMining() override;
+  void onSynchronized() override;
+
   virtual CoreStatistics getCoreStatistics() const override;
   
   virtual std::time_t getStartTime() const;

@@ -1103,13 +1103,41 @@ void Core::notifyOnSuccess(error::AddBlockErrorCode opResult, uint32_t previousB
   }
 }
 
+void Core::pauseMining() {
+  m_miner->pause();
+}
+
+void Core::updateBlockTemplateAndResumeMining() {
+  if (update_miner_block_template()) {
+    m_miner->resume();
+    logger(Logging::DEBUGGING) << "updated block template and resumed mining";
+  }
+  else {
+    logger(Logging::ERROR) << "updating block template failed, mining not resumed";
+    m_miner->stop();
+  }
+}
+
+bool Core::update_miner_block_template() {
+  return m_miner->on_block_chain_update();
+}
+
+void Core::onSynchronized() {
+  m_miner->on_synchronized();
+}
+
 bool Core::handleBlockFound(BlockTemplate& b) {
+  pauseMining();
+
   auto add_result = submitBlock(toBinaryArray(b));
   if (add_result != error::AddBlockErrorCode::ADDED_TO_MAIN &&
       add_result != error::AddBlockErrorCode::ADDED_TO_ALTERNATIVE && 
       add_result != error::AddBlockErrorCode::ADDED_TO_ALTERNATIVE_AND_SWITCHED) {
     return false;
   }
+
+  updateBlockTemplateAndResumeMining();
+
   return true;
 }
 
