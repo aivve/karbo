@@ -360,8 +360,10 @@ namespace CryptoNote
         ++m_config.current_extra_message_index;
 
         logger(INFO, GREEN) << "Found block for difficulty: "
-          << local_diff << std::endl
-          << " pow: " << Common::podToHex(h) << std::endl
+          << local_diff
+          << " at height " << cb.getBlockIndex()
+          << " v. " << (int)b.majorVersion << "\r\n"
+          << " pow: " << Common::podToHex(h) << "\r\n"
           << "hash: " << Common::podToHex(cb.getBlockHash());
 
         if(!m_handler.handleBlockFound(b)) {
