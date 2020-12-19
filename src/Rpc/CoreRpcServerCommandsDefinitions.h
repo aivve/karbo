@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "CryptoNote.h"
 #include "CryptoNoteProtocol/CryptoNoteProtocolDefinitions.h"
 #include "CryptoNoteCore/CryptoNoteBasic.h"
 #include "CryptoNoteCore/Difficulty.h"
@@ -1165,36 +1166,6 @@ struct COMMAND_RPC_VERIFY_MESSAGE {
 };
 
 //-----------------------------------------------
-struct ReserveProofEntry
-{
-	Crypto::Hash transaction_id;
-	uint64_t index_in_transaction;
-	Crypto::PublicKey shared_secret;
-	Crypto::KeyImage key_image;
-	Crypto::Signature shared_secret_sig;
-	Crypto::Signature key_image_sig;
-
-	void serialize(ISerializer& s)
-	{
-		KV_MEMBER(transaction_id)
-		KV_MEMBER(index_in_transaction)
-		KV_MEMBER(shared_secret)
-		KV_MEMBER(key_image)
-		KV_MEMBER(shared_secret_sig)
-		KV_MEMBER(key_image_sig)
-	}
-};
-
-struct ReserveProof {
-	std::vector<ReserveProofEntry> proofs;
-	Crypto::Signature signature;
-
-	void serialize(ISerializer &s) {
-		KV_MEMBER(proofs)
-		KV_MEMBER(signature)
-	}
-};
-
 struct COMMAND_RPC_CHECK_RESERVE_PROOF {
   struct request {
     std::string address;

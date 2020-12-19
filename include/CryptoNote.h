@@ -125,4 +125,18 @@ struct RawBlock {
   std::vector<BinaryArray> transactions;
 };
 
+struct ReserveProofEntry {
+  Crypto::Hash transaction_id;
+  uint64_t index_in_transaction;
+  Crypto::PublicKey shared_secret;
+  Crypto::KeyImage key_image;
+  Crypto::Signature shared_secret_sig;
+  Crypto::Signature key_image_sig;
+};
+
+struct ReserveProof {
+  std::vector<ReserveProofEntry> proofs;
+  Crypto::Signature signature;
+};
+
 }

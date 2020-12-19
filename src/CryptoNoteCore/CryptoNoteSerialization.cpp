@@ -517,4 +517,18 @@ void serialize(RawBlock& rawBlock, ISerializer& serializer) {
   }
 }
 
+void serialize(ReserveProofEntry& reserveProofEntry, ISerializer& serializer) {
+  serializer(reserveProofEntry.transaction_id, "transaction_id");
+  serializer(reserveProofEntry.index_in_transaction, "index_in_transaction");
+  serializer(reserveProofEntry.shared_secret, "shared_secret");
+  serializer(reserveProofEntry.key_image, "key_image");
+  serializer(reserveProofEntry.shared_secret_sig, "shared_secret_sig");
+  serializer(reserveProofEntry.key_image_sig, "key_image_sig");
+}
+
+void serialize(ReserveProof& reserveProof, ISerializer& serializer) {
+  serializer(reserveProof.proofs, "proofs");
+  serializer(reserveProof.signature, "signature");
+}
+
 } // namespace CryptoNote
