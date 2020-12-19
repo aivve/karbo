@@ -80,30 +80,6 @@ struct Transaction : public TransactionPrefix {
 struct BaseTransaction : public TransactionPrefix {
 };
 
-struct ParentBlock {
-  uint8_t majorVersion;
-  uint8_t minorVersion;
-  Crypto::Hash previousBlockHash;
-  uint16_t transactionCount;
-  std::vector<Crypto::Hash> baseTransactionBranch;
-  BaseTransaction baseTransaction;
-  std::vector<Crypto::Hash> blockchainBranch;
-};
-
-struct BlockHeader {
-  uint8_t majorVersion;
-  uint8_t minorVersion;
-  uint32_t nonce;
-  uint64_t timestamp;
-  Crypto::Hash previousBlockHash;
-};
-
-struct BlockTemplate : public BlockHeader {
-  ParentBlock parentBlock;
-  Transaction baseTransaction;
-  std::vector<Crypto::Hash> transactionHashes;
-};
-
 struct AccountPublicAddress {
   Crypto::PublicKey spendPublicKey;
   Crypto::PublicKey viewPublicKey;
@@ -120,9 +96,14 @@ struct KeyPair {
   Crypto::SecretKey secretKey;
 };
 
-struct RawBlock {
-  BinaryArray block; //BlockTemplate
-  std::vector<BinaryArray> transactions;
+struct ParentBlock {
+  uint8_t majorVersion;
+  uint8_t minorVersion;
+  Crypto::Hash previousBlockHash;
+  uint16_t transactionCount;
+  std::vector<Crypto::Hash> baseTransactionBranch;
+  BaseTransaction baseTransaction;
+  std::vector<Crypto::Hash> blockchainBranch;
 };
 
 struct ReserveProofEntry {
@@ -137,6 +118,33 @@ struct ReserveProofEntry {
 struct ReserveProof {
   std::vector<ReserveProofEntry> proofs;
   Crypto::Signature signature;
+};
+
+struct Stake {
+  ReserveProof reserve_proof;
+  AccountPublicAddress address;
+  Crypto::PublicKey tx_proof_rA;
+  Crypto::Signature tx_proof_sig;
+};
+
+struct BlockHeader {
+  uint8_t majorVersion;
+  uint8_t minorVersion;
+  uint32_t nonce;
+  uint64_t timestamp;
+  Crypto::Hash previousBlockHash;
+};
+
+struct BlockTemplate : public BlockHeader {
+  ParentBlock parentBlock;
+  Transaction baseTransaction;
+  Stake stake;
+  std::vector<Crypto::Hash> transactionHashes;
+};
+
+struct RawBlock {
+  BinaryArray block; //BlockTemplate
+  std::vector<BinaryArray> transactions;
 };
 
 }

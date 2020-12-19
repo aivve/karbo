@@ -427,6 +427,11 @@ void serialize(BlockTemplate& block, ISerializer& serializer) {
   }
 
   serializer(block.baseTransaction, "miner_tx");
+
+  if (block.majorVersion >= BLOCK_MAJOR_VERSION_5) {
+    serializer(block.stake, "stake");
+  }
+
   serializer(block.transactionHashes, "tx_hashes");
 }
 
@@ -497,7 +502,6 @@ void serialize(RawBlock& rawBlock, ISerializer& serializer) {
       serializer.binary(txBlob.data(), txBlob.size(), "transaction");
       serializer.endObject();
     }
-
     serializer.endArray();
   } else {
     size_t txCount = rawBlock.transactions.size();
@@ -529,6 +533,13 @@ void serialize(ReserveProofEntry& reserveProofEntry, ISerializer& serializer) {
 void serialize(ReserveProof& reserveProof, ISerializer& serializer) {
   serializer(reserveProof.proofs, "proofs");
   serializer(reserveProof.signature, "signature");
+}
+
+void serialize(Stake& stake, ISerializer& serializer) {
+  serializer(stake.reserve_proof, "reserve_proof");
+  serializer(stake.address, "address");
+  serializer(stake.tx_proof_rA, "tx_proof_rA");
+  serializer(stake.tx_proof_sig, "tx_proof_sig");
 }
 
 } // namespace CryptoNote
