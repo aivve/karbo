@@ -89,6 +89,7 @@ namespace CryptoNote {
     OnceInInterval m_update_merge_hr_interval;
 
     std::vector<BinaryArray> m_extra_messages;
+    ReserveProof m_reserve_proof;
     miner_config m_config;
     std::string m_config_folder_path;
     std::atomic<uint64_t> m_last_hr_merge_time;

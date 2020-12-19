@@ -1537,7 +1537,29 @@ bool RpcServer::onGetBlockTemplate(const COMMAND_RPC_GETBLOCKTEMPLATE::request& 
   CryptoNote::BinaryArray blob_reserve;
   blob_reserve.resize(req.reserve_size, 0);
 
-  if (!m_core.getBlockTemplate(blockTemplate, acc, blob_reserve, res.difficulty, res.height)) {
+  // reserve proof decode and check
+  std::string decoded_data;
+  uint64_t prefix;
+  if (!Tools::Base58::decode_addr(req.reserve_proof, prefix, decoded_data) || prefix != CryptoNote::parameters::CRYPTONOTE_RESERVE_PROOF_BASE58_PREFIX) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Reserve proof decoding error" };
+  }
+  BinaryArray ba(decoded_data.begin(), decoded_data.end());
+  ReserveProof reserve_proof;
+  if (!fromBinaryArray(reserve_proof, ba)) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Reserve proof parsing error" };
+  }
+  uint64_t total = 0, spent = 0;
+  std::string message = "";
+  if (!m_core.checkReserveProof(reserve_proof, acc, message, m_core.getCurrentBlockchainHeight(), total, spent)) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Invalid reserve proof" };
+  }
+
+  uint64_t reserve = total - spent;
+  if (reserve < CryptoNote::parameters::STAKE_MIN_AMOUNT) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Insufficient reserve proof" };
+  }
+
+  if (!m_core.getBlockTemplate(blockTemplate, acc, blob_reserve, reserve_proof, res.difficulty, res.height)) {
     logger(ERROR) << "Failed to create block template";
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: failed to create block template" };
   }

@@ -108,7 +108,8 @@ public:
 
   //IMinerHandler
   virtual bool handleBlockFound(BlockTemplate& b); //override;
-  virtual bool getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, const BinaryArray& extraNonce, Difficulty& difficulty, uint32_t& height) const override;
+  virtual bool getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, const BinaryArray& extraNonce, const ReserveProof& reserveProof, Difficulty& difficulty, uint32_t& height) const override;
+  virtual bool checkReserveProof(const ReserveProof& proof, const CryptoNote::AccountPublicAddress& address, std::string& message, uint32_t height, uint64_t total, uint64_t spent) override;
 
   miner& get_miner() { return *m_miner; }
 

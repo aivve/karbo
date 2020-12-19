@@ -1387,7 +1387,7 @@ bool Core::getPoolChangesLite(const Crypto::Hash& lastBlockHash, const std::vect
   return getTopBlockHash() == lastBlockHash;
 }
 
-bool Core::getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, const BinaryArray& extraNonce,
+bool Core::getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, const BinaryArray& extraNonce, const ReserveProof& reserveProof,
                             Difficulty& difficulty, uint32_t& height) const {
   throwIfNotInitialized();
 
@@ -1452,6 +1452,8 @@ bool Core::getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, c
   uint64_t fee;
   fillBlockTemplate(b, medianSize, currency.maxBlockCumulativeSize(height), transactionsSize, fee);
 
+  Crypto::SecretKey tx_key;
+
   /*
      two-phase miner transaction generation: we don't know exact block size until we prepare block, but we don't know
      reward until we know
@@ -1460,7 +1462,7 @@ bool Core::getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, c
   */
   // make blocks coin-base tx looks close to real coinbase tx to get truthful blob size
   bool r = currency.constructMinerTx(b.majorVersion, height, medianSize, alreadyGeneratedCoins, transactionsSize, fee, adr,
-                                     b.baseTransaction, extraNonce, 14);
+                                     b.baseTransaction, tx_key, extraNonce, 14);
   if (!r) {
     logger(Logging::ERROR, Logging::BRIGHT_RED) << "Failed to construct miner tx, first chance";
     return false;
@@ -1470,7 +1472,7 @@ bool Core::getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, c
   const size_t TRIES_COUNT = 10;
   for (size_t tryCount = 0; tryCount < TRIES_COUNT; ++tryCount) {
     r = currency.constructMinerTx(b.majorVersion, height, medianSize, alreadyGeneratedCoins, cumulativeSize, fee, adr,
-                                  b.baseTransaction, extraNonce, 14);
+                                  b.baseTransaction, tx_key, extraNonce, 14);
     if (!r) {
       logger(Logging::ERROR, Logging::BRIGHT_RED) << "Failed to construct miner tx, second chance";
       return false;
@@ -1518,11 +1520,124 @@ bool Core::getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, c
       return false;
     }
 
+    // add the tx proof to check that the given address received the reward
+    // the reserve proof has to be for the same address
+    b.stake.address = adr;
+    Crypto::KeyImage p = *reinterpret_cast<const Crypto::KeyImage*>(&adr.viewPublicKey);
+    Crypto::KeyImage k = *reinterpret_cast<const Crypto::KeyImage*>(&tx_key);
+    Crypto::KeyImage pk = Crypto::scalarmultKey(p, k);
+    Crypto::PublicKey R;
+    b.stake.tx_proof_rA = reinterpret_cast<const PublicKey&>(pk);
+    Crypto::secret_key_to_public_key(tx_key, R);
+    try {
+      Crypto::generate_tx_proof(getObjectHash(b.baseTransaction), R, adr.viewPublicKey, b.stake.tx_proof_rA, tx_key, b.stake.tx_proof_sig);
+    }
+    catch (const std::runtime_error& e) {
+      logger(Logging::ERROR, Logging::BRIGHT_RED) << "Proof generation error: " << *e.what();
+      return false;
+    }
+
+    // reserve proof is verified in caller function
+    b.stake.reserve_proof = reserveProof;
+
     return true;
   }
 
   logger(Logging::ERROR, Logging::BRIGHT_RED) << "Failed to create_block_template with " << TRIES_COUNT << " tries";
   return false;
+}
+
+bool Core::checkReserveProof(const ReserveProof& proof, const CryptoNote::AccountPublicAddress& address, std::string& message, uint32_t height, uint64_t total, uint64_t spent) {
+  // compute signature prefix hash
+  std::string prefix_data = message;
+  prefix_data.append((const char*)&address, sizeof(CryptoNote::AccountPublicAddress));
+  for (size_t i = 0; i < proof.proofs.size(); ++i) {
+    prefix_data.append((const char*)&proof.proofs[i].key_image, sizeof(Crypto::PublicKey));
+  }
+  Crypto::Hash prefix_hash;
+  Crypto::cn_fast_hash(prefix_data.data(), prefix_data.size(), prefix_hash);
+
+  // fetch txes
+  std::vector<Crypto::Hash> transactionHashes;
+  for (size_t i = 0; i < proof.proofs.size(); ++i) {
+    transactionHashes.push_back(proof.proofs[i].transaction_id);
+  }
+  std::vector<Hash> missed_txs;
+  std::vector<BinaryArray> txs;
+  getTransactions(transactionHashes, txs, missed_txs);
+  if (!missed_txs.empty()) {
+    logger(Logging::ERROR, Logging::BRIGHT_RED) << "Couldn't find some transactions of reserve proof";
+    return false;
+  }
+  std::vector<Transaction> transactions;
+
+  // check spent status
+  total = 0;
+  spent = 0;
+  for (size_t i = 0; i < proof.proofs.size(); ++i) {
+    const ReserveProofEntry& e = proof.proofs[i];
+    Transaction tx;
+    if (!fromBinaryArray(tx, txs[i])) {
+      logger(Logging::ERROR, Logging::BRIGHT_RED) << "Couldn't deserialize transaction";
+      return false;
+    }
+
+    CryptoNote::TransactionPrefix txp = *static_cast<const TransactionPrefix*>(&tx);
+
+    if (e.index_in_transaction >= txp.outputs.size()) {
+      logger(Logging::ERROR, Logging::BRIGHT_RED) << "index_in_tx is out of bound";
+      return false;
+    }
+
+    const KeyOutput out_key = boost::get<KeyOutput>(txp.outputs[e.index_in_transaction].target);
+
+    // get tx pub key
+    Crypto::PublicKey txPubKey = getTransactionPublicKeyFromExtra(txp.extra);
+
+    // check singature for shared secret
+    if (!Crypto::check_tx_proof(prefix_hash, address.viewPublicKey, txPubKey, e.shared_secret, e.shared_secret_sig)) {
+      logger(Logging::ERROR, Logging::BRIGHT_RED) << "Failed to check singature for shared secret";
+      return false;
+    }
+
+    // check signature for key image
+    const std::vector<const Crypto::PublicKey*>& pubs = { &out_key.key };
+    if (!Crypto::check_ring_signature(prefix_hash, e.key_image, &pubs[0], 1, &e.key_image_sig, false)) {
+      logger(Logging::ERROR, Logging::BRIGHT_RED) << "Failed to check signature for key image";
+      return false;
+    }
+
+    // check if the address really received the fund
+    Crypto::KeyDerivation derivation;
+    if (!Crypto::generate_key_derivation(e.shared_secret, Crypto::EllipticCurveScalar2SecretKey(Crypto::I), derivation)) {
+      logger(Logging::ERROR, Logging::BRIGHT_RED) << "Failed to generate key derivation";
+      return false;
+    }
+    try {
+      Crypto::PublicKey pubkey;
+      derive_public_key(derivation, e.index_in_transaction, address.spendPublicKey, pubkey);
+      if (pubkey == out_key.key) {
+        uint64_t amount = txp.outputs[e.index_in_transaction].amount;
+        total += amount;
+
+        if (isKeyImageSpent(e.key_image, height)) {
+          spent += amount;
+        }
+      }
+    }
+    catch (...)
+    {
+      logger(Logging::ERROR, Logging::BRIGHT_RED) << "Unknown error";
+      return false;
+    }
+  }
+
+  // check signature for address spend keys
+  if (!Crypto::check_signature(prefix_hash, address.spendPublicKey, proof.signature)) {
+    return false;
+  }
+
+  return true;
 }
 
 CoreStatistics Core::getCoreStatistics() const {

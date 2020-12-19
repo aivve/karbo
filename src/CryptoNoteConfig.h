@@ -106,6 +106,8 @@ const size_t   FUSION_TX_MIN_IN_OUT_COUNT_RATIO              = 4;
 
 const uint32_t KEY_IMAGE_CHECKING_BLOCK_INDEX                = 0;
 
+const uint64_t STAKE_MIN_AMOUNT                              = COIN * 1000; // TODO: test, increase in prod, or make it deterministic using supply/reward;
+
 const uint32_t UPGRADE_HEIGHT_V2                             = 10; //60000;
 const uint32_t UPGRADE_HEIGHT_V3                             = 50;//216000;
 const uint32_t UPGRADE_HEIGHT_V3_1                           = 51;//216394;
