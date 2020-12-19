@@ -39,7 +39,9 @@ enum class BlockValidationError {
   TRANSACTION_ABSENT_IN_POOL,
   BASE_TRANSACTION_EXTRA_MM_TAG,
   TRANSACTIONS_INCONSISTENCY,
-  DUPLICATE_TRANSACTION
+  DUPLICATE_TRANSACTION,
+  INVALID_STAKE,
+  INSUFFICIENT_STAKE
 };
 
 // custom category:
@@ -74,6 +76,8 @@ public:
       case BlockValidationError::BASE_TRANSACTION_EXTRA_MM_TAG: return "Merge mining tag was found in miner transaction extra";
       case BlockValidationError::TRANSACTIONS_INCONSISTENCY: return "Block contains inconsistent transactions";
       case BlockValidationError::DUPLICATE_TRANSACTION: return "Block contains duplicate transaction";
+      case BlockValidationError::INVALID_STAKE: return "Invalid stake";
+      case BlockValidationError::INSUFFICIENT_STAKE: return "Insufficient stake";
 
       default: return "Unknown error";
     }
