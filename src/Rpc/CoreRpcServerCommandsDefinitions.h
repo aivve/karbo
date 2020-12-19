@@ -1165,7 +1165,7 @@ struct COMMAND_RPC_VERIFY_MESSAGE {
 };
 
 //-----------------------------------------------
-struct reserve_proof_entry
+struct ReserveProofEntry
 {
 	Crypto::Hash transaction_id;
 	uint64_t index_in_transaction;
@@ -1185,8 +1185,8 @@ struct reserve_proof_entry
 	}
 };
 
-struct reserve_proof {
-	std::vector<reserve_proof_entry> proofs;
+struct ReserveProof {
+	std::vector<ReserveProofEntry> proofs;
 	Crypto::Signature signature;
 
 	void serialize(ISerializer &s) {

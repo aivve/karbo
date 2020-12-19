@@ -1981,12 +1981,12 @@ bool RpcServer::onCheckReserveProof(const COMMAND_RPC_CHECK_RESERVE_PROOF::reque
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Reserve proof decoding error" };
   }
   BinaryArray ba(decoded_data.begin(), decoded_data.end());
-  reserve_proof proof_decoded;
+  ReserveProof proof_decoded;
   if (!fromBinaryArray(proof_decoded, ba)) {
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Reserve proof parsing error" };
   }
 
-  std::vector<reserve_proof_entry>& proofs = proof_decoded.proofs;
+  std::vector<ReserveProofEntry>& proofs = proof_decoded.proofs;
 
   // compute signature prefix hash
   std::string prefix_data = req.message;
@@ -2014,7 +2014,7 @@ bool RpcServer::onCheckReserveProof(const COMMAND_RPC_CHECK_RESERVE_PROOF::reque
   res.total = 0;
   res.spent = 0;
   for (size_t i = 0; i < proofs.size(); ++i) {
-    const reserve_proof_entry& proof = proofs[i];
+    const ReserveProofEntry& proof = proofs[i];
     Transaction tx;
     if (!fromBinaryArray(tx, txs[i])) {
       throw JsonRpc::JsonRpcError{
