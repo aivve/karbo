@@ -1605,7 +1605,7 @@ bool Core::getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, c
   return false;
 }
 
-bool Core::checkReserveProof(const ReserveProof& proof, const CryptoNote::AccountPublicAddress& address, std::string& message, uint32_t height, uint64_t total, uint64_t spent) {
+bool Core::checkReserveProof(const ReserveProof& proof, const CryptoNote::AccountPublicAddress& address, std::string& message, uint32_t height, uint64_t& total, uint64_t& spent) {
   // compute signature prefix hash
   std::string prefix_data = message;
   prefix_data.append((const char*)&address, sizeof(CryptoNote::AccountPublicAddress));
