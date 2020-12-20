@@ -260,12 +260,12 @@ namespace CryptoNote
 
     uint64_t reserve = total - spent;
     if (reserve < CryptoNote::parameters::STAKE_MIN_AMOUNT) {
-      logger(ERROR, BRIGHT_RED) << "Insufficient reserve proof";
+      logger(ERROR, BRIGHT_RED) << "Insufficient reserve proof of " << m_currency.formatAmount(reserve) << ", required minimum: " << m_currency.formatAmount(CryptoNote::parameters::STAKE_MIN_AMOUNT);
       return false;
     }
 
-    logger(INFO, WHITE) << "Reserve proof of " << m_currency.formatAmount(reserve);
-
+    logger(INFO, WHITE) << "Reserve proof: " << m_currency.formatAmount(reserve) << " (total: " << m_currency.formatAmount(total) << ", spent: " << m_currency.formatAmount(spent) << ")";
+    
     std::lock_guard<std::mutex> lk(m_threads_lock);
 
     if(!m_threads.empty()) {
