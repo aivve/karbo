@@ -36,6 +36,7 @@ public:
   std::string reserveProof;
   std::string miningAddress;
   uint32_t miningThreads;
+  bool startMining = false;
 };
 
 } //namespace CryptoNote

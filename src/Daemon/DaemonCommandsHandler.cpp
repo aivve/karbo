@@ -418,23 +418,15 @@ bool DaemonCommandsHandler::print_pool_count(const std::vector<std::string>& arg
 //--------------------------------------------------------------------------------
 bool DaemonCommandsHandler::start_mining(const std::vector<std::string>& args) {
   if (!args.size()) {
-    std::cout << "Please, specify wallet address to mine for: start_mining <addr> [threads=1]" << std::endl;
-    return true;
-  }
-
-  CryptoNote::AccountPublicAddress adr;
-  if (!m_core.getCurrency().parseAccountAddressString(args.front(), adr)) {
-    std::cout << "target account address has wrong format" << std::endl;
+    std::cout << "Please, specify the number of threads: start_mining <threads=1>" << std::endl;
     return true;
   }
 
   size_t threads_count = 1;
-  if (args.size() > 1) {
-    bool ok = Common::fromString(args[1], threads_count);
-    threads_count = (ok && 0 < threads_count) ? threads_count : 1;
-  }
-
-  m_core.get_miner().start(adr, threads_count);
+  bool ok = Common::fromString(args[1], threads_count);
+  threads_count = (ok && 0 < threads_count) ? threads_count : 1;
+  
+  m_core.get_miner().start(threads_count);
   return true;
 }
 //--------------------------------------------------------------------------------

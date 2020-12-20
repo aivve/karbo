@@ -43,7 +43,7 @@ namespace CryptoNote {
     bool init(const MinerConfig& config);
     bool set_block_template(const BlockTemplate& bl, const Difficulty& diffic);
     bool on_block_chain_update();
-    bool start(const AccountPublicAddress& adr, size_t threads_count);
+    bool start(size_t threads_count);
     uint64_t get_speed();
     void send_stop_signal();
     bool stop();
