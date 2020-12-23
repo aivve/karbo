@@ -112,13 +112,13 @@ const uint32_t KEY_IMAGE_CHECKING_BLOCK_INDEX                = 0;
 
 const uint64_t STAKE_MIN_AMOUNT                              = COIN * 1000; // TODO: test, increase in prod, or make it deterministic using supply/reward;
 
-const uint32_t UPGRADE_HEIGHT_V2                             = 10; //60000;
-const uint32_t UPGRADE_HEIGHT_V3                             = 50;//216000;
-const uint32_t UPGRADE_HEIGHT_V3_1                           = 51;//216394;
-const uint32_t UPGRADE_HEIGHT_V4                             = 70;//266000;
-const uint32_t UPGRADE_HEIGHT_V4_1                           = 71;//300000;
-const uint32_t UPGRADE_HEIGHT_V4_2                           = 72;//500000;
-const uint32_t UPGRADE_HEIGHT_V5                             = 100;//4294967294;
+const uint32_t UPGRADE_HEIGHT_V2                             = 60000;
+const uint32_t UPGRADE_HEIGHT_V3                             = 216000;
+const uint32_t UPGRADE_HEIGHT_V3_1                           = 216394;
+const uint32_t UPGRADE_HEIGHT_V4                             = 266000;
+const uint32_t UPGRADE_HEIGHT_V4_1                           = 300000;
+const uint32_t UPGRADE_HEIGHT_V4_2                           = 500000;
+const uint32_t UPGRADE_HEIGHT_V5                             = 567348;
 
 const unsigned UPGRADE_VOTING_THRESHOLD                      = 90;               // percent
 const uint32_t UPGRADE_VOTING_WINDOW                         = EXPECTED_NUMBER_OF_BLOCKS_PER_DAY;  // blocks
