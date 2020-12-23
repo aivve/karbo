@@ -110,6 +110,9 @@ public:
                                   std::vector<TransactionPrefixInfo>& addedTransactions,
                                   std::vector<Crypto::Hash>& deletedTransactions) const = 0;
 
+  virtual uint64_t getBaseStake() = 0;
+  virtual bool getBaseStake(const uint32_t height, uint64_t& stake) = 0;
+
   virtual bool getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, const BinaryArray& extraNonce, const ReserveProof& reserveProof,
                                 Difficulty& difficulty, uint32_t& height) const = 0;
 

@@ -280,6 +280,7 @@ struct COMMAND_RPC_GET_INFO {
     uint64_t difficulty;
     uint64_t cumulative_difficulty;
     uint64_t next_reward;
+    uint64_t base_stake;
     uint64_t min_fee;
     uint64_t transactions_count;
     uint64_t transactions_pool_size;
@@ -305,6 +306,7 @@ struct COMMAND_RPC_GET_INFO {
       KV_MEMBER(difficulty)
       KV_MEMBER(cumulative_difficulty)
       KV_MEMBER(next_reward)
+      KV_MEMBER(base_stake)
       KV_MEMBER(min_fee)
       KV_MEMBER(transactions_count)
       KV_MEMBER(transactions_pool_size)

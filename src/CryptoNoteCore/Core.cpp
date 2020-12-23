@@ -1445,6 +1445,23 @@ bool Core::getPoolChangesLite(const Crypto::Hash& lastBlockHash, const std::vect
   return getTopBlockHash() == lastBlockHash;
 }
 
+bool Core::getBaseStake(const uint32_t height, uint64_t& stake) {
+  if (height > getTopBlockIndex()) {
+    stake = 0;
+    return false;
+  }
+
+  uint64_t alreadyGeneratedCoins = chainsLeaves[0]->getAlreadyGeneratedCoins(height - 1);
+  stake = currency.calculateStake(alreadyGeneratedCoins);
+
+  return true;
+}
+
+uint64_t Core::getBaseStake() {
+  uint64_t alreadyGeneratedCoins = chainsLeaves[0]->getAlreadyGeneratedCoins();
+  return currency.calculateStake(alreadyGeneratedCoins);
+}
+
 bool Core::getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, const BinaryArray& extraNonce, const ReserveProof& reserveProof,
                             Difficulty& difficulty, uint32_t& height) const {
   throwIfNotInitialized();

@@ -1148,7 +1148,8 @@ bool RpcServer::onGetInfo(const COMMAND_RPC_GET_INFO::request& req, COMMAND_RPC_
   res.min_fee = m_core.getMinimalFee();
   uint64_t alreadyGeneratedCoins = m_core.getTotalGeneratedAmount();
   res.already_generated_coins = m_core.getCurrency().formatAmount(alreadyGeneratedCoins); // that large uint64_t number is unsafe in JavaScript environment and therefore as a JSON value so we display it as a formatted string
-  res.next_reward = m_core.calculateReward(alreadyGeneratedCoins);
+  res.next_reward = m_core.getCurrency().calculateReward(alreadyGeneratedCoins);
+  res.base_stake = m_core.getCurrency().calculateStake(alreadyGeneratedCoins);
   res.start_time = (uint64_t)m_core.getStartTime();
   res.version = PROJECT_VERSION_LONG;
   res.status = CORE_RPC_STATUS_OK;

@@ -187,6 +187,23 @@ uint64_t Currency::calculateReward(uint64_t alreadyGeneratedCoins) const {
   return baseReward;
 }
 
+uint64_t Currency::calculateStake(uint64_t alreadyGeneratedCoins) const {
+  // calculate supply based stake
+  uint64_t supplyStake = alreadyGeneratedCoins / CryptoNote::parameters::STAKE_BASE_TERM / CryptoNote::parameters::STAKE_EMISSION_FRACTION;
+
+  uint64_t baseReward = calculateReward(alreadyGeneratedCoins);
+
+  // caclulate profitable stake based on reward
+  uint64_t interStake = CryptoNote::parameters::STAKE_INTEREST_FACTOR * baseReward * CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY / CryptoNote::parameters::STAKE_BASE_TERM;
+
+  // calculate final stake as aurea mediocritas between emission based stake
+  // and reward/profitability based stake
+  // (in our case of 2 elements median is the same as average)
+  uint64_t adjustedStake = (supplyStake + interStake) / 2;
+
+  return adjustedStake * CryptoNote::parameters::STAKE_BASE_TERM;
+}
+
 bool Currency::getBlockReward(uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins,
   uint64_t fee, uint64_t& reward, int64_t& emissionChange) const {
 

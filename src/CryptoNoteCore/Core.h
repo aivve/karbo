@@ -106,6 +106,9 @@ public:
   virtual bool getPoolChangesLite(const Crypto::Hash& lastBlockHash, const std::vector<Crypto::Hash>& knownHashes, std::vector<TransactionPrefixInfo>& addedTransactions,
     std::vector<Crypto::Hash>& deletedTransactions) const override;
 
+  virtual uint64_t getBaseStake() override;
+  virtual bool getBaseStake(const uint32_t height, uint64_t& stake) override;
+
   //IMinerHandler
   virtual bool handleBlockFound(BlockTemplate& b); //override;
   virtual bool getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, const BinaryArray& extraNonce, const ReserveProof& reserveProof, Difficulty& difficulty, uint32_t& height) const override;
