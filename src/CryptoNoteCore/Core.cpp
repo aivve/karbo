@@ -774,14 +774,14 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
   }
 
   // validate stake
-  uint64_t total = 0, spent = 0;
+  uint64_t totalProof = 0, spentProof = 0;
   std::string message = "";
-  if (!checkReserveProof(blockTemplate.stake.reserve_proof, blockTemplate.stake.address, message, currentBlockchainHeight, total, spent)) {
+  if (!checkReserveProof(blockTemplate.stake.reserve_proof, blockTemplate.stake.address, message, currentBlockchainHeight, totalProof, spentProof)) {
     logger(Logging::WARNING) << "Invalid reserve proof in stake of block " << blockStr;
     return error::BlockValidationError::INVALID_STAKE;
   }
 
-  uint64_t reserve = total - spent;
+  uint64_t reserve = totalProof - spentProof;
   if (reserve < CryptoNote::parameters::STAKE_MIN_AMOUNT) {
     logger(Logging::WARNING) << "Insufficient reserve proof in stake of block " << blockStr;
     return error::BlockValidationError::INSUFFICIENT_STAKE;
@@ -821,7 +821,7 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
     }
 
     if (reward != received) {
-      logger(Logging::WARNING) << "Stake owner only got " << currency.formatAmount(received) 
+      logger(Logging::WARNING) << "Stake owner only got " << currency.formatAmount(received)
         << " of expected " << currency.formatAmount(reward) << " in the block " << blockStr;
       return error::BlockValidationError::BLOCK_REWARD_MISMATCH;
     }
@@ -829,6 +829,31 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
   else {
     logger(Logging::WARNING) << "Miner reward destination mismatch in the block " << blockStr;
     return error::BlockValidationError::BLOCK_REWARD_MISMATCH;
+  }
+
+  // loop through previous blocks till the limit to check for the reuse of the same stake
+  if (!checkpoints.isInCheckpointZone(blockIndex)) {
+    const size_t allowed = reserve / getBaseStake();
+    size_t depth = 0, found = 0;
+    Hash prev_hash = blockTemplate.previousBlockHash;
+    while (depth <= currency.minedMoneyUnlockWindow() || found <= allowed) {
+      BlockTemplate prev_block = getBlockByHash(prev_hash);
+      prev_hash = prev_block.previousBlockHash;
+      for (const auto& c : blockTemplate.stake.reserve_proof.proofs) {
+        for (const auto& p : prev_block.stake.reserve_proof.proofs) {
+          if (c.key_image == p.key_image) {
+            found++;
+          }
+        }
+      }
+
+      depth++;
+    }
+
+    if (found > allowed) {
+      logger(Logging::WARNING) << "Stake reuse count exceeds the limit in block " << cachedBlock.getBlockHash();
+      return error::BlockValidationError::STAKE_REUSED;
+    }
   }
 
   auto ret = error::AddBlockErrorCode::ADDED_TO_ALTERNATIVE;
