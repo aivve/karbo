@@ -244,7 +244,7 @@ namespace CryptoNote
   }
   //-----------------------------------------------------------------------------------------------------
   bool miner::start(size_t threads_count)
-  {   
+  {
     if (is_mining()) {
       logger(ERROR) << "Starting miner but it's already started";
       return false;
