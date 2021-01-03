@@ -423,7 +423,7 @@ bool DaemonCommandsHandler::start_mining(const std::vector<std::string>& args) {
   }
 
   size_t threads_count = 1;
-  bool ok = Common::fromString(args[1], threads_count);
+  bool ok = Common::fromString(args[0], threads_count);
   threads_count = (ok && 0 < threads_count) ? threads_count : 1;
   
   m_core.get_miner().start(threads_count);
