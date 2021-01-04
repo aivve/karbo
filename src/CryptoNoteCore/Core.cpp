@@ -588,7 +588,7 @@ bool Core::getBlockLongHash(Crypto::cn_context &context, const CachedBlock& b, C
   // Get the corresponding 8 blocks from blockchain based on preparatory hash_1
   // and throw them into the pot too
   auto cache = findSegmentContainingBlock(b.getBlock().previousBlockHash);
-  uint32_t maxHeight = std::min<uint32_t>(getCurrentBlockchainHeight(), b.getBlockIndex() - 1 - currency.minedMoneyUnlockWindow());
+  uint32_t maxHeight = std::min<uint32_t>(getTopBlockIndex(), b.getBlockIndex() - 1 - currency.minedMoneyUnlockWindow());
 
   for (uint8_t i = 1; i <= 8; i++) {
     uint8_t chunk[4] = {
