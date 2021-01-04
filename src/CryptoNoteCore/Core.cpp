@@ -772,85 +772,88 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
   }
 
   // validate stake
-  uint64_t totalProof = 0, spentProof = 0;
-  std::string message = "";
-  if (!checkReserveProof(blockTemplate.stake.reserve_proof, blockTemplate.stake.address, message, currentBlockchainHeight, totalProof, spentProof)) {
-    logger(Logging::WARNING) << "Invalid reserve proof in stake of block " << blockStr;
-    return error::BlockValidationError::INVALID_STAKE;
-  }
 
-  uint64_t reserve = totalProof - spentProof;
-  if (reserve < CryptoNote::parameters::STAKE_MIN_AMOUNT) {
-    logger(Logging::WARNING) << "Insufficient reserve proof in stake of block " << blockStr;
-    return error::BlockValidationError::INSUFFICIENT_STAKE;
-  }
-
-  // check that reward goes to the stake owner
-  Crypto::PublicKey R = getTransactionPublicKeyFromExtra(blockTemplate.baseTransaction.extra);
-  bool r = Crypto::check_tx_proof(getObjectHash(blockTemplate.baseTransaction), R, blockTemplate.stake.address.viewPublicKey, blockTemplate.stake.tx_proof_rA, blockTemplate.stake.tx_proof_sig);
-  if (r) {
-    // obtain key derivation by multiplying scalar 1 to the pubkey r*A included in the signature
-    Crypto::KeyDerivation derivation;
-    if (!Crypto::generate_key_derivation(blockTemplate.stake.tx_proof_rA, Crypto::EllipticCurveScalar2SecretKey(Crypto::I), derivation)) {
-      logger(Logging::WARNING) << "Failed to generate key derivation in stake of block " << blockStr;
-      return error::BlockValidationError::BLOCK_REWARD_MISMATCH;
+  if (blockTemplate.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    uint64_t totalProof = 0, spentProof = 0;
+    std::string message = "";
+    if (!checkReserveProof(blockTemplate.stake.reserve_proof, blockTemplate.stake.address, message, currentBlockchainHeight, totalProof, spentProof)) {
+      logger(Logging::WARNING) << "Invalid reserve proof in stake of block " << blockStr;
+      return error::BlockValidationError::INVALID_STAKE;
     }
 
-    // look for outputs
-    uint64_t received(0);
-    size_t keyIndex(0);
-    try {
-      for (const TransactionOutput& o : blockTemplate.baseTransaction.outputs) {
-        if (o.target.type() == typeid(KeyOutput)) {
-          const KeyOutput out_key = boost::get<KeyOutput>(o.target);
-          Crypto::PublicKey pubkey;
-          derive_public_key(derivation, keyIndex, blockTemplate.stake.address.spendPublicKey, pubkey);
-          if (pubkey == out_key.key) {
-            received += o.amount;
-          }
-        }
-        ++keyIndex;
-      }
-    }
-    catch (...)
-    {
-      logger(Logging::WARNING) << "Unknown error during validation of the stake of block " << blockStr;
-      return error::BlockValidationError::BLOCK_REWARD_MISMATCH;
+    uint64_t reserve = totalProof - spentProof;
+    if (reserve < CryptoNote::parameters::STAKE_MIN_AMOUNT) {
+      logger(Logging::WARNING) << "Insufficient reserve proof in stake of block " << blockStr;
+      return error::BlockValidationError::INSUFFICIENT_STAKE;
     }
 
-    if (reward != received) {
-      logger(Logging::WARNING) << "Stake owner only got " << currency.formatAmount(received)
-        << " of expected " << currency.formatAmount(reward) << " in the block " << blockStr;
-      return error::BlockValidationError::BLOCK_REWARD_MISMATCH;
-    }
-  }
-  else {
-    logger(Logging::WARNING) << "Miner reward destination mismatch in the block " << blockStr;
-    return error::BlockValidationError::BLOCK_REWARD_MISMATCH;
-  }
-
-  // loop through previous blocks till the limit to check for the reuse of the same stake
-  if (!checkpoints.isInCheckpointZone(blockIndex)) {
-    const size_t allowed = reserve / getBaseStake();
-    size_t depth = 0, found = 0;
-    Hash prev_hash = blockTemplate.previousBlockHash;
-    while (depth <= currency.minedMoneyUnlockWindow() || found <= allowed) {
-      BlockTemplate prev_block = getBlockByHash(prev_hash);
-      prev_hash = prev_block.previousBlockHash;
-      for (const auto& c : blockTemplate.stake.reserve_proof.proofs) {
-        for (const auto& p : prev_block.stake.reserve_proof.proofs) {
-          if (c.key_image == p.key_image) {
-            found++;
-          }
-        }
+    // check that reward goes to the stake owner
+    Crypto::PublicKey R = getTransactionPublicKeyFromExtra(blockTemplate.baseTransaction.extra);
+    bool r = Crypto::check_tx_proof(getObjectHash(blockTemplate.baseTransaction), R, blockTemplate.stake.address.viewPublicKey, blockTemplate.stake.tx_proof_rA, blockTemplate.stake.tx_proof_sig);
+    if (r) {
+      // obtain key derivation by multiplying scalar 1 to the pubkey r*A included in the signature
+      Crypto::KeyDerivation derivation;
+      if (!Crypto::generate_key_derivation(blockTemplate.stake.tx_proof_rA, Crypto::EllipticCurveScalar2SecretKey(Crypto::I), derivation)) {
+        logger(Logging::WARNING) << "Failed to generate key derivation in stake of block " << blockStr;
+        return error::BlockValidationError::BLOCK_REWARD_MISMATCH;
       }
 
-      depth++;
+      // look for outputs
+      uint64_t received(0);
+      size_t keyIndex(0);
+      try {
+        for (const TransactionOutput& o : blockTemplate.baseTransaction.outputs) {
+          if (o.target.type() == typeid(KeyOutput)) {
+            const KeyOutput out_key = boost::get<KeyOutput>(o.target);
+            Crypto::PublicKey pubkey;
+            derive_public_key(derivation, keyIndex, blockTemplate.stake.address.spendPublicKey, pubkey);
+            if (pubkey == out_key.key) {
+              received += o.amount;
+            }
+          }
+          ++keyIndex;
+        }
+      }
+      catch (...)
+      {
+        logger(Logging::WARNING) << "Unknown error during validation of the stake of block " << blockStr;
+        return error::BlockValidationError::BLOCK_REWARD_MISMATCH;
+      }
+
+      if (reward != received) {
+        logger(Logging::WARNING) << "Stake owner only got " << currency.formatAmount(received)
+          << " of expected " << currency.formatAmount(reward) << " in the block " << blockStr;
+        return error::BlockValidationError::BLOCK_REWARD_MISMATCH;
+      }
+    }
+    else {
+      logger(Logging::WARNING) << "Miner reward destination mismatch in the block " << blockStr;
+      return error::BlockValidationError::BLOCK_REWARD_MISMATCH;
     }
 
-    if (found > allowed) {
-      logger(Logging::WARNING) << "Stake reuse count exceeds the limit in block " << cachedBlock.getBlockHash();
-      return error::BlockValidationError::STAKE_REUSED;
+    // loop through previous blocks till the limit to check for the reuse of the same stake
+    if (!checkpoints.isInCheckpointZone(blockIndex)) {
+      const size_t allowed = reserve / getBaseStake();
+      size_t depth = 0, found = 0;
+      Hash prev_hash = blockTemplate.previousBlockHash;
+      while (depth <= currency.minedMoneyUnlockWindow() || found <= allowed) {
+        BlockTemplate prev_block = getBlockByHash(prev_hash);
+        prev_hash = prev_block.previousBlockHash;
+        for (const auto& c : blockTemplate.stake.reserve_proof.proofs) {
+          for (const auto& p : prev_block.stake.reserve_proof.proofs) {
+            if (c.key_image == p.key_image) {
+              found++;
+            }
+          }
+        }
+
+        depth++;
+      }
+
+      if (found > allowed) {
+        logger(Logging::WARNING) << "Stake reuse count exceeds the limit in block " << cachedBlock.getBlockHash();
+        return error::BlockValidationError::STAKE_REUSED;
+      }
     }
   }
 
