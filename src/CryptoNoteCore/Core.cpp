@@ -2052,6 +2052,16 @@ void Core::initRootSegment() {
 }
 
 void Core::rewind(const uint32_t blockIndex) {
+  assert(!chainsStorage.empty());
+  assert(!chainsLeaves.empty());
+  throwIfNotInitialized();
+
+  uint32_t topIndex = chainsLeaves[0]->getTopBlockIndex();
+
+  if (blockIndex > topIndex) {
+    throw std::runtime_error("Wrong index " + std::to_string(blockIndex) + ", the top block index is " + std::to_string(topIndex));
+  }
+
   cutSegment(*chainsLeaves[0], blockIndex);
 }
 
