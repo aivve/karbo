@@ -1,5 +1,5 @@
-// Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2016-2020, The Karbo developers
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2016-2020, Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -22,7 +22,12 @@
 
 #include <CryptoTypes.h>
 #include "generic-ops.h"
+#include <boost/align/aligned_alloc.hpp>
 #include "yespower.h"
+
+/* Standard Cryptonight */
+#define CN_PAGE_SIZE                    2097152
+constexpr size_t CRYPTONIGHT_MEMORY     = 2 * 1024 * 1024;
 
 namespace Crypto {
 
@@ -47,22 +52,30 @@ namespace Crypto {
   class cn_context {
   public:
 
-    cn_context();
-    ~cn_context();
-#if !defined(_MSC_VER) || _MSC_VER >= 1800
+    cn_context()
+    {
+        long_state = (uint8_t*)boost::alignment::aligned_alloc(CRYPTONIGHT_MEMORY, CN_PAGE_SIZE);
+        hash_state = (uint8_t*)boost::alignment::aligned_alloc(4096, 4096);
+    }
+
+    ~cn_context()
+    {
+        if(long_state != nullptr)
+            boost::alignment::aligned_free(long_state);
+        if(hash_state != nullptr)
+            boost::alignment::aligned_free(hash_state);
+    }
+
     cn_context(const cn_context &) = delete;
     void operator=(const cn_context &) = delete;
-#endif
 
-  private:
-
-    void *data;
-    friend inline void cn_slow_hash(cn_context &, const void *, size_t, Hash &);
+     uint8_t* long_state = nullptr;
+     uint8_t* hash_state = nullptr;
   };
 
-  inline void cn_slow_hash(cn_context &context, const void *data, size_t length, Hash &hash) {
-	cn_slow_hash(data, length, reinterpret_cast<char *>(&hash));
-  }
+  void cn_slow_hash(cn_context &context, const void *data, size_t length, Hash &hash);
+  void cn_slow_hash_gpu(cn_context &context, const void *data, size_t length, Hash &hash);
+  void cn_slow_hash_krb(cn_context &context, const void *data, size_t length, Hash &hash);
 
   inline bool y_slow_hash(const void* data, size_t length, Hash& seed, Hash& hash) {
     static const yespower_params_t yespower_params = {

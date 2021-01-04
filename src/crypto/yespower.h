@@ -1,8 +1,6 @@
 /*-
  * Copyright 2009 Colin Percival
  * Copyright 2013-2018 Alexander Peslyak
- * Copyright 2020 The Karbo developers
- *
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

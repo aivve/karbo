@@ -119,7 +119,7 @@
 
 #include "insecure_memzero.h"
 #include "sysendian.h"
-#include "blake256.h"
+#include "blake2b.h"
 
 #include "yespower.h"
 
@@ -1185,7 +1185,7 @@ int yespower(yespower_local_t *local,
     ctx.S0 = S;
     ctx.S1 = S + Swidth_to_Sbytes1(Swidth);
 
-    blake256_hash(init_hash, src, srclen);
+    blake2b_hash(init_hash, src, srclen);
 
     ctx.S2 = S + 2 * Swidth_to_Sbytes1(Swidth);
     ctx.w = 0;
@@ -1197,10 +1197,10 @@ int yespower(yespower_local_t *local,
         srclen = 0;
     }
 
-    pbkdf2_blake256(init_hash, sizeof(init_hash), src, srclen, 1, B, 64);
+    pbkdf2_blake2b(init_hash, sizeof(init_hash), src, srclen, 1, B, 128);
     memcpy(init_hash, B, sizeof(init_hash));
     smix_1_0(B, r, N, V, XY, &ctx);
-    hmac_blake256_hash((uint8_t *)dst, B + B_size - 64, 64, init_hash, sizeof(init_hash));
+    hmac_blake2b_hash((uint8_t *)dst, B + B_size - 64, 64, init_hash, sizeof(init_hash));
 
     /* Success! */
     return 0;
