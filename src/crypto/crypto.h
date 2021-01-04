@@ -92,9 +92,9 @@ namespace Crypto {
     friend void generate_ring_signature(const Hash &, const KeyImage &,
       const PublicKey *const *, size_t, const SecretKey &, size_t, Signature *);
     static bool check_ring_signature(const Hash &, const KeyImage &,
-      const PublicKey *const *, size_t, const Signature *);
+      const PublicKey *const *, size_t, const Signature *, bool);
     friend bool check_ring_signature(const Hash &, const KeyImage &,
-      const PublicKey *const *, size_t, const Signature *);
+      const PublicKey *const *, size_t, const Signature *, bool);
   };
 
   void hash_to_scalar(const void *data, size_t length, EllipticCurveScalar &res);
@@ -126,7 +126,7 @@ namespace Crypto {
   }
 
   /* Multiply secret key to public key
- */
+   */
   inline bool secret_key_mult_public_key(const SecretKey &sec, const PublicKey &pub, PublicKey &result) {
     return crypto_ops::secret_key_mult_public_key(sec, pub, result);
   }
@@ -189,7 +189,7 @@ namespace Crypto {
     return crypto_ops::check_signature(prefix_hash, pub, sig);
   }
 
-  /* Generation and checking of a tx proof; given a tx pubkey R, the recipient's view pubkey A, and the key
+  /* Generation and checking of a tx proof; given a tx pubkey R, the recipient's view pubkey A, and the key 
    * derivation D, the signature proves the knowledge of the tx secret key r such that R=r*G and D=r*A
    */
   inline void generate_tx_proof(const Hash &prefix_hash, const PublicKey &R, const PublicKey &A, const PublicKey &D, const SecretKey &r, Signature &sig) {
@@ -197,7 +197,7 @@ namespace Crypto {
   }
   inline bool check_tx_proof(const Hash &prefix_hash, const PublicKey &R, const PublicKey &A, const PublicKey &D, const Signature &sig) {
     return crypto_ops::check_tx_proof(prefix_hash, R, A, D, sig);
-  }	
+  }
 
   /* To send money to a key:
    * * The sender generates an ephemeral key and includes it in transaction output.
@@ -225,8 +225,8 @@ namespace Crypto {
   }
   inline bool check_ring_signature(const Hash &prefix_hash, const KeyImage &image,
     const PublicKey *const *pubs, size_t pubs_count,
-    const Signature *sig) {
-    return crypto_ops::check_ring_signature(prefix_hash, image, pubs, pubs_count, sig);
+    const Signature *sig, bool checkKeyImage) {
+    return crypto_ops::check_ring_signature(prefix_hash, image, pubs, pubs_count, sig, checkKeyImage);
   }
 
   /* Variants with vector<const PublicKey *> parameters.
@@ -239,8 +239,8 @@ namespace Crypto {
   }
   inline bool check_ring_signature(const Hash &prefix_hash, const KeyImage &image,
     const std::vector<const PublicKey *> &pubs,
-    const Signature *sig) {
-    return check_ring_signature(prefix_hash, image, pubs.data(), pubs.size(), sig);
+    const Signature *sig, bool checkKeyImage) {
+    return check_ring_signature(prefix_hash, image, pubs.data(), pubs.size(), sig, checkKeyImage);
   }
 
   static inline const KeyImage &EllipticCurveScalar2KeyImage(const EllipticCurveScalar &k) { return (const KeyImage&)k; }
