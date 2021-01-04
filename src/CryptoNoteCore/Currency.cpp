@@ -199,7 +199,7 @@ uint64_t Currency::calculateStake(uint64_t alreadyGeneratedCoins) const {
   // calculate final stake as aurea mediocritas between emission based stake
   // and reward/profitability based stake
   // (in our case of 2 elements median is the same as average)
-  uint64_t adjustedStake = (supplyStake + interStake) / 2 * CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW;
+  uint64_t adjustedStake = (supplyStake + interStake) / 2 /** CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW*/;
 
   std::cout << "supply stake:   " << formatAmount(supplyStake) << ENDL;
   std::cout << "interest stake: " << formatAmount(interStake) << ENDL;
