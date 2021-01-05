@@ -64,15 +64,15 @@ namespace Crypto {
 	cn_slow_hash(data, length, reinterpret_cast<char *>(&hash));
   }
 
-  inline bool y_slow_hash(const void* data, size_t length, Hash& seed, Hash& hash) {
-    static const yespower_params_t yespower_params = {
+  inline bool y_slow_hash(const void* data, size_t length, const Hash& seed, Hash& hash) {
+    yespower_params_t yespower_params = {
       2048,
       32,
       seed.data,
       sizeof(seed)
     };
 
-    if (yespower_tls(reinterpret_cast<uint8_t*>(&data), length, &yespower_params, reinterpret_cast<yespower_binary_t*>(&hash))) {
+    if (yespower_tls((uint8_t *)&data, length, &yespower_params, (yespower_binary_t *)&hash)) {
       return false;
     }
 
