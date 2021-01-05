@@ -72,7 +72,7 @@ namespace Crypto {
       sizeof(seed)
     };
 
-    if (yespower_tls((uint8_t *)&data, length, &yespower_params, (yespower_binary_t *)&hash)) {
+    if (yespower_tls(reinterpret_cast<uint8_t*>(&data), length, &yespower_params, reinterpret_cast<yespower_binary_t*>(&hash))) {
       return false;
     }
 
