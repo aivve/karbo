@@ -772,7 +772,6 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
   }
 
   // validate stake
-
   if (blockTemplate.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
     uint64_t totalProof = 0, spentProof = 0;
     std::string message = "";
@@ -782,7 +781,7 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
     }
 
     uint64_t reserve = totalProof - spentProof;
-    if (reserve < CryptoNote::parameters::STAKE_MIN_AMOUNT) {
+    if (reserve < currency.calculateStake(alreadyGeneratedCoins)) {
       logger(Logging::WARNING) << "Insufficient reserve proof in stake of block " << blockStr;
       return error::BlockValidationError::INSUFFICIENT_STAKE;
     }
