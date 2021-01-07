@@ -841,6 +841,8 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
       Hash prev_hash = blockTemplate.previousBlockHash;
       while (depth <= currency.minedMoneyUnlockWindow() || found <= allowed) {
         BlockTemplate prev_block = getBlockByHash(prev_hash);
+        if (prev_block.majorVersion < BLOCK_MAJOR_VERSION_5)
+          break;
         prev_hash = prev_block.previousBlockHash;
         for (const auto& c : blockTemplate.stake.reserve_proof.proofs) {
           for (const auto& p : prev_block.stake.reserve_proof.proofs) {
