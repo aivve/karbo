@@ -64,14 +64,13 @@ namespace Crypto {
 	cn_slow_hash(data, length, reinterpret_cast<char *>(&hash));
   }
 
-  static const yespower_params_t yespower_params = {
+  inline bool y_slow_hash(const void* data, size_t length, const Hash& seed, Hash& hash) {
+    yespower_params_t yespower_params = {
       2048,
       32,
-      (const uint8_t *)"Now I am become Death, the destroyer of worlds",
-      46
-  };
-
-  inline bool y_slow_hash(const void* data, size_t length, Hash& hash) {
+      seed.data,
+      sizeof(seed)
+    };
 
     if (yespower_tls((unsigned char *)data, length, &yespower_params, (yespower_binary_t *)hash.data)) {
       return false;
