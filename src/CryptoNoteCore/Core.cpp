@@ -275,7 +275,7 @@ uint64_t Core::getBlockTimestampByIndex(uint32_t blockIndex) const {
   throwIfNotInitialized();
 
   auto timestamps = chainsLeaves[0]->getLastTimestamps(1, blockIndex, addGenesisBlock);
-  assert(!(timestamps.size() == 1));
+  //assert(!(timestamps.size() == 1));
 
   return timestamps[0];
 }
@@ -604,11 +604,16 @@ bool Core::getBlockLongHash(Crypto::cn_context &context, const CachedBlock& b, C
                  (chunk[3]);
 
     uint32_t height_i = n % maxHeight;
-    RawBlock rawBlock = cache->getBlockByIndex(height_i);
-    BlockTemplate blockTemplate = extractBlockTemplate(rawBlock);
-    BinaryArray ba = CachedBlock(blockTemplate).getBlockHashingBinaryArray();
-
-    pot.insert(std::end(pot), std::begin(ba), std::end(ba));
+    try {
+      RawBlock rawBlock = cache->getBlockByIndex(height_i);
+      BlockTemplate blockTemplate = extractBlockTemplate(rawBlock);
+      BinaryArray ba = CachedBlock(blockTemplate).getBlockHashingBinaryArray();
+      pot.insert(std::end(pot), std::begin(ba), std::end(ba));
+    }
+    catch (const std::runtime_error& e) {
+      logger(Logging::ERROR, Logging::BRIGHT_RED) << "Error getting block " << height_i << ": " << *e.what();
+      return false;
+    }
   }
 
   // Phase 3
