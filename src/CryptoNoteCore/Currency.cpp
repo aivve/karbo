@@ -175,9 +175,7 @@ uint64_t Currency::calculateReward(uint64_t alreadyGeneratedCoins) const {
     // flat rate tail emission reward,
     // inflation slowly diminishing in relation to supply
     //baseReward = CryptoNote::parameters::TAIL_EMISSION_REWARD;
-    // changed to
-    // Friedman's k-percent rule,
-    // inflation 2% of total coins in circulation per year
+    // Friedman's k-percent rule, inflation 2% of total coins in circulation p.a.
     // according to Whitepaper v. 1, p. 16 (with change of 1% to 2%)
     const uint64_t blocksInOneYear = expectedNumberOfBlocksPerDay() * 365;
     uint64_t twoPercentOfEmission = static_cast<uint64_t>(static_cast<double>(alreadyGeneratedCoins) / 100.0 * 2.0);
@@ -189,6 +187,7 @@ uint64_t Currency::calculateReward(uint64_t alreadyGeneratedCoins) const {
 
 uint64_t Currency::calculateStake(uint64_t alreadyGeneratedCoins) const {
   // calculate supply based stake
+  // ~25% of coins in circulation involved around the clock
   uint64_t supplyStake = alreadyGeneratedCoins / CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY / CryptoNote::parameters::STAKE_EMISSION_FRACTION;
 
   uint64_t baseReward = calculateReward(alreadyGeneratedCoins);
@@ -198,7 +197,6 @@ uint64_t Currency::calculateStake(uint64_t alreadyGeneratedCoins) const {
   
   // calculate final stake as aurea mediocritas between emission based stake
   // and reward/profitability based stake
-  // (in our case of 2 elements median is the same as average)
   uint64_t adjustedStake = (supplyStake + interStake) / 2 /** CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW*/;
 
   std::cout << "supply stake:   " << formatAmount(supplyStake) << ENDL;
