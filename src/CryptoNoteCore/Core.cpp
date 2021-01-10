@@ -731,7 +731,7 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
     }
 
     uint64_t fee = 0;
-    // Skip expensive fee validation (due to a dynamic minimal fee calculation)
+    // skip expensive fee validation (due to a dynamic minimal fee calculation)
     // for transactions in a checkpoints range - they are assumed valid.
     const uint64_t minFee = checkpoints.isInCheckpointZone(blockIndex) ? 0 : getMinimalFee(blockIndex);
     auto transactionValidationResult = validateTransaction(transactions[i], validatorState, cache, m_transactionValidationThreadPool, fee, minFee, previousBlockIndex, false);
@@ -780,7 +780,7 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
     return error::BlockValidationError::PROOF_OF_WORK_TOO_WEAK;
   }
 
-  // Skip expensive stake validation in a checkpoints range, it's assumed valid
+  // stake validation
   if (blockTemplate.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
 
     // limit reserve proof size to reduce blockchain bloat
@@ -800,7 +800,8 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
     }
 
     uint64_t reserve = totalProof - spentProof;
-    if (reserve < currency.calculateStake(alreadyGeneratedCoins)) {
+    uint64_t minStake = currency.calculateStake(alreadyGeneratedCoins);
+    if (reserve < minStake) {
       logger(Logging::WARNING) << "Insufficient reserve proof in stake of block " << blockStr;
       return error::BlockValidationError::INSUFFICIENT_STAKE;
     }
@@ -849,9 +850,10 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
       return error::BlockValidationError::BLOCK_REWARD_MISMATCH;
     }
 
+    // skip expensive stake validation in a checkpoints range, it's assumed valid
     // loop through previous blocks till the limit to check for the reuse of the same stake
     if (!checkpoints.isInCheckpointZone(blockIndex)) {
-      const size_t allowed = reserve / getBaseStake();
+      const size_t allowed = reserve / minStake;
       size_t depth = 0, found = 0;
       Hash prev_hash = blockTemplate.previousBlockHash;
       while (depth <= currency.minedMoneyUnlockWindow() || found <= allowed) {
