@@ -221,6 +221,15 @@ namespace CryptoNote
         return false;
       }
       BinaryArray ba(decoded_data.begin(), decoded_data.end());
+
+      size_t reserveSize = ba.size();
+      if (reserveSize > CryptoNote::parameters::STAKE_RESERVE_PROOF_SIZE_LIMIT) {
+        logger(Logging::WARNING) << "Too large reserve proof: "
+          << reserveSize << ", whereas max is: "
+          << CryptoNote::parameters::STAKE_RESERVE_PROOF_SIZE_LIMIT;
+        return false;
+      }
+
       if (!fromBinaryArray(m_reserve_proof, ba)) {
         logger(ERROR, BRIGHT_RED) << "Reserve proof parsing error";
         return false;

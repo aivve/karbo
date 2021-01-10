@@ -780,8 +780,18 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
     return error::BlockValidationError::PROOF_OF_WORK_TOO_WEAK;
   }
 
-  // validate stake
+  // Skip expensive stake validation in a checkpoints range, it's assumed valid
   if (blockTemplate.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
+
+    // limit reserve proof size to reduce blockchain bloat
+    size_t reserveSize = toBinaryArray(blockTemplate.stake.reserve_proof).size();
+    if (reserveSize > CryptoNote::parameters::STAKE_RESERVE_PROOF_SIZE_LIMIT) {
+      logger(Logging::WARNING) << "Too large reserve proof in stake of block " << blockStr
+                               << "its size: " << reserveSize << ", whereas max is: " 
+                               << CryptoNote::parameters::STAKE_RESERVE_PROOF_SIZE_LIMIT;
+      return error::BlockValidationError::INVALID_STAKE;
+    }
+
     uint64_t totalProof = 0, spentProof = 0;
     std::string message = "";
     if (!checkReserveProof(blockTemplate.stake.reserve_proof, blockTemplate.stake.address, message, currentBlockchainHeight, totalProof, spentProof)) {
