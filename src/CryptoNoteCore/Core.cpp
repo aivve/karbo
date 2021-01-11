@@ -876,6 +876,15 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
         logger(Logging::WARNING) << "Stake reuse count exceeds the limit in block " << cachedBlock.getBlockHash();
         return error::BlockValidationError::STAKE_REUSED;
       }
+
+      // make sure the transactions in reserve proof are older than N blocks
+      for (const auto& c : blockTemplate.stake.reserve_proof.proofs) {
+        TransactionDetails txd = getTransactionDetails(c.transaction_id);
+        if (txd.blockIndex <= currentBlockchainHeight - currency.minedMoneyUnlockWindow() || txd.blockIndex == boost::value_initialized<uint32_t>()) {
+          logger(Logging::WARNING) << "Transactions in stake's reserve proof are too recent, wait " << currency.minedMoneyUnlockWindow() << " blocks to use that proof";
+          return error::BlockValidationError::STAKE_TOO_FRESH;
+        }
+      }
     }
   }
 

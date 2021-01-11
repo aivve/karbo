@@ -42,7 +42,8 @@ enum class BlockValidationError {
   DUPLICATE_TRANSACTION,
   INVALID_STAKE,
   INSUFFICIENT_STAKE,
-  STAKE_REUSED
+  STAKE_REUSED,
+  STAKE_TOO_FRESH
 };
 
 // custom category:
@@ -80,6 +81,7 @@ public:
       case BlockValidationError::INVALID_STAKE: return "Invalid stake";
       case BlockValidationError::INSUFFICIENT_STAKE: return "Insufficient stake";
       case BlockValidationError::STAKE_REUSED: return "Stake reused too much";
+      case BlockValidationError::STAKE_TOO_FRESH: return "Too fresh transactions in stake's reserve proof";
 
       default: return "Unknown error";
     }
