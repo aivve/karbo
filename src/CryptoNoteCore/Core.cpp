@@ -879,8 +879,9 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
 
       // make sure the transactions in reserve proof are older than N blocks
       for (const auto& c : blockTemplate.stake.reserve_proof.proofs) {
-        TransactionDetails txd = getTransactionDetails(c.transaction_id);
-        if (txd.blockIndex <= currentBlockchainHeight - currency.minedMoneyUnlockWindow() || txd.blockIndex == boost::value_initialized<uint32_t>()) {
+        uint32_t txBlockIndex = cache->getBlockIndexContainingTx(c.transaction_id);
+
+        if (txBlockIndex <= currentBlockchainHeight - currency.minedMoneyUnlockWindow()) {
           logger(Logging::WARNING) << "Transactions in stake's reserve proof are too recent, wait " << currency.minedMoneyUnlockWindow() << " blocks to use that proof";
           return error::BlockValidationError::STAKE_TOO_FRESH;
         }
