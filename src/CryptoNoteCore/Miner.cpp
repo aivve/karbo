@@ -281,6 +281,74 @@ namespace CryptoNote
       logger(INFO) << "Mining has been stopped, " << m_threads.size() << " finished" ;
     return true;
   }
+
+  //-----------------------------------------------------------------------------------------------------
+  bool miner::find_nonce_for_given_block(Crypto::cn_context &context, BlockTemplate& bl, const Difficulty& diffic) {
+
+    unsigned nthreads = std::thread::hardware_concurrency();
+
+    if (nthreads > 0 && diffic > 5) {
+      std::vector<std::future<void>> threads(nthreads);
+      std::atomic<uint32_t> foundNonce;
+      std::atomic<bool> found(false);
+      uint32_t startNonce = Random::randomValue<uint32_t>();
+
+      for (unsigned i = 0; i < nthreads; ++i) {
+        threads[i] = std::async(std::launch::async, [&, i]() {
+          Crypto::cn_context localctx;
+          Crypto::Hash h;
+
+          BlockTemplate lb(bl); // copy to local block
+
+          for (uint32_t nonce = startNonce + i; !found; nonce += nthreads) {
+            lb.nonce = nonce;
+
+            CachedBlock cb(lb);
+            try {
+              h = cb.getBlockLongHash(localctx);
+            }
+            catch (std::exception&) {
+              return;
+            }
+
+            if (check_hash(h, diffic)) {
+              foundNonce = nonce;
+              found = true;
+              return;
+            }
+          }
+        });
+      }
+
+      for (auto& t : threads) {
+        t.wait();
+      }
+
+      if (found) {
+        bl.nonce = foundNonce.load();
+      }
+
+      return found;
+    }
+    else {
+      for (; bl.nonce != std::numeric_limits<uint32_t>::max(); bl.nonce++) {
+        Crypto::Hash h;
+        CachedBlock cb(bl);
+        try {
+          h = cb.getBlockLongHash(context);
+        }
+        catch (std::exception&) {
+          return false;
+        }
+
+        if (check_hash(h, diffic)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
   //-----------------------------------------------------------------------------------------------------
   void miner::on_synchronized()
   {
