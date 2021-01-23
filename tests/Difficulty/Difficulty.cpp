@@ -57,6 +57,7 @@ int main(int argc, char *argv[]) {
             begin = end - currency.difficultyWindow();
         }
         uint64_t res = currency.nextDifficulty(
+            1, 1, // version, height
             vector<uint64_t>(timestamps.begin() + begin, timestamps.begin() + end),
             vector<uint64_t>(cumulative_difficulties.begin() + begin, cumulative_difficulties.begin() + end));
         if (res != difficulty) {

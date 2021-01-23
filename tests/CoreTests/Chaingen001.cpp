@@ -61,7 +61,7 @@ bool one_block::verify_1(CryptoNote::Core& c, size_t ev_index, const std::vector
 
     CHECK_TEST_CONDITION(blocks.size() == 1);
     //CHECK_TEST_CONDITION(outs.size() == blocks.size());
-    CHECK_TEST_CONDITION(c.getBlockchainTransactionCount() == 1);
+    CHECK_TEST_CONDITION(c.getBlockchainTransactionsCount() == 1);
     //CHECK_TEST_CONDITION(blocks.back() == boost::get<CryptoNote::BlockTemplate>(events[0]));
 
     return true;

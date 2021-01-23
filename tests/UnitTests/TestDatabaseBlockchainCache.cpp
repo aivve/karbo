@@ -22,7 +22,7 @@
 #include "CryptoNoteCore/BlockchainCache.h"
 #include <CryptoNoteCore/DatabaseBlockchainCache.h>
 #include "CryptoNoteCore/CryptoNoteTools.h"
-#include "CryptoNoteCore/TransactionValidatiorState.h"
+#include "CryptoNoteCore/TransactionValidatorState.h"
 #include "DataBaseMock.h"
 #include <CryptoNoteCore/DBUtils.h>
 #include "CryptoNoteCore/MemoryBlockchainCacheFactory.h"
@@ -148,7 +148,7 @@ TEST_F(DatabaseBlockchainCacheTests, RawBlocksWereInserted) {
   auto b = database.blocks();
   while (i--) {
     BlockTemplate blockTemplate;
-    bool result = fromBinaryArray(blockTemplate, database.blocks().at(i + 1).block);
+    bool result = CryptoNote::fromBinaryArray(blockTemplate, database.blocks().at(i + 1).block);
     ASSERT_TRUE(result);
 
     CachedBlock cachedBlock(blockTemplate);

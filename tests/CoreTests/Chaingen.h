@@ -46,7 +46,6 @@
 #include <Logging/ConsoleLogger.h>
 
 #include <../tests/UnitTests/DataBaseMock.h>
-#include <../tests/Common/VectorMainChainStorage.h>
 
 namespace concolor {
 using namespace Common::Console;
@@ -366,11 +365,11 @@ public:
   bool operator()(const CryptoNote::Transaction& tx) const {
     log_event("CryptoNote::Transaction");
 
-    size_t pool_size = m_c.getPoolTransactionCount();
+    size_t pool_size = m_c.getPoolTransactionsCount();
     CryptoNote::BinaryArray packedTx;
     toBinaryArray(tx, packedTx);
     auto result = m_c.addTransactionToPool(packedTx);
-    bool tx_added = pool_size + 1 == m_c.getPoolTransactionCount();
+    bool tx_added = pool_size + 1 == m_c.getPoolTransactionsCount();
     bool r = check_tx_verification_context(result, tx_added, m_ev_index, tx, m_validator);
     CHECK_AND_NO_ASSERT_MES(r, false, "tx verification context check failed");
     return true;
@@ -426,9 +425,9 @@ public:
   bool operator()(const serialized_transaction& sr_tx) const {
     log_event("serialized_transaction");
 
-    size_t pool_size = m_c.getPoolTransactionCount();
+    size_t pool_size = m_c.getPoolTransactionsCount();
     bool result = m_c.addTransactionToPool(sr_tx.data);
-    bool tx_added = pool_size + 1 == m_c.getPoolTransactionCount();
+    bool tx_added = pool_size + 1 == m_c.getPoolTransactionsCount();
 
     CryptoNote::Transaction tx;
 
@@ -481,6 +480,7 @@ inline bool do_replay_events(std::vector<test_event_entry>& events, t_test_class
     return false;
 
   Logging::ConsoleLogger logger;
+  CryptoNote::MinerConfig emptyMiner;
   try {
     System::Dispatcher dispatcher;
     CryptoNote::DataBaseMock database;
@@ -490,8 +490,8 @@ inline bool do_replay_events(std::vector<test_event_entry>& events, t_test_class
       CryptoNote::Checkpoints(logger),
       dispatcher,
       std::unique_ptr<CryptoNote::IBlockchainCacheFactory>(new CryptoNote::DatabaseBlockchainCacheFactory(database, logger)),
-      CryptoNote::createVectorMainChainStorage(validator.currency()));
-    c.load();
+      1);
+    c.load(emptyMiner);
     return replay_events_through_core<t_test_class>(c, events, validator);
   } catch (std::exception& e) {
     std::cout << concolor::magenta << "Failed to init core: " << e.what() << concolor::normal << std::endl;

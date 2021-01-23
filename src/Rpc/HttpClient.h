@@ -46,7 +46,7 @@ public:
 class HttpClient {
 public:
 
-  HttpClient(System::Dispatcher& dispatcher, const std::string& address, uint16_t port, bool ssl_enable);
+  HttpClient(System::Dispatcher& dispatcher, const std::string& address, uint16_t port, bool ssl_enable = false);
   ~HttpClient();
   void request(HttpRequest& req, HttpResponse& res);
   

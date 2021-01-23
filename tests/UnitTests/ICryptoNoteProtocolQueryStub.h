@@ -33,6 +33,7 @@ public:
   virtual uint32_t getObservedHeight() const override;
   virtual size_t getPeerCount() const override;
   virtual bool isSynchronized() const override;
+  virtual bool getConnections(std::vector<CryptoNote::CryptoNoteConnectionContext>& connections) const override;
 
   void setPeerCount(uint32_t count);
   void setObservedHeight(uint32_t height);
@@ -40,7 +41,6 @@ public:
   void setSynchronizedStatus(bool status);
   virtual void relayBlock(CryptoNote::NOTIFY_NEW_BLOCK_request& arg) override{};
   virtual void relayTransactions(const std::vector<CryptoNote::BinaryArray>& transactions) override{};
-
 
 private:
   size_t peers;

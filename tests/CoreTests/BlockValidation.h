@@ -47,7 +47,7 @@ public:
     DEFINE_TESTS_ERROR_CONTEXT("CheckBlockPurged::check_block_purged");
 
     CHECK_TEST_CONDITION(m_invalidBlockIdx < eventIdx);
-    CHECK_EQ(0, c.getPoolTransactionCount());
+    CHECK_EQ(0, c.getPoolTransactionsCount());
     CHECK_EQ(m_invalidBlockIdx, c.getTopBlockIndex() + 1);
 
     return true;
@@ -80,7 +80,7 @@ struct CheckBlockAccepted : public test_chain_unit_base {
   bool check_block_accepted(CryptoNote::Core& c, size_t /*eventIdx*/, const std::vector<test_event_entry>& /*events*/) {
     DEFINE_TESTS_ERROR_CONTEXT("CheckBlockAccepted::check_block_accepted");
 
-    CHECK_EQ(0, c.getPoolTransactionCount());
+    CHECK_EQ(0, c.getPoolTransactionsCount());
     CHECK_EQ(m_expectedBlockchainHeight, c.getTopBlockIndex() + 1);
 
     return true;

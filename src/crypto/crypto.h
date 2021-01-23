@@ -31,8 +31,11 @@
 #include "crypto-ops.h"
 #include "crypto-util.h"
 #include "hash.h"
+#include "random.h"
 
 namespace Crypto {
+
+  extern std::mutex random_lock;
 
   class crypto_ops {
     crypto_ops();

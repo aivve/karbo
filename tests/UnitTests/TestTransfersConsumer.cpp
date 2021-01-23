@@ -731,7 +731,8 @@ TEST_F(TransfersConsumerTest, onNewBlocks_checkTransactionInformation) {
 
   std::shared_ptr<ITransaction> tx(createTransaction());
   addTestKeyOutput(*tx, 1000, 2, m_accountKeys);
-  Hash paymentId = Crypto::rand<Hash>();
+  Hash paymentId;
+  Random::randomBytes(32, paymentId.data);
   uint64_t unlockTime = 10;
   tx->setPaymentId(paymentId);
   tx->setUnlockTime(unlockTime);
@@ -893,9 +894,13 @@ TEST_F(TransfersConsumerTest, onPoolUpdated_deleteTransactionNotDeleted) {
   TransfersObserver observer;
   sub.addObserver(&observer);
 
+  Crypto::Hash h1, h2;
+  Random::randomBytes(32, h1.data);
+  Random::randomBytes(32, h2.data);
+
   std::vector<Crypto::Hash> deleted = { 
-    Crypto::rand<Crypto::Hash>(), 
-    Crypto::rand<Crypto::Hash>() 
+    h1, 
+    h2 
   };
 
   m_consumer.onPoolUpdated({}, deleted);

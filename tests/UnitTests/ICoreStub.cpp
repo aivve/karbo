@@ -306,7 +306,7 @@ void ICoreStub::save() {
   assert(false);
 }
 
-void ICoreStub::load() {
+void ICoreStub::load(const CryptoNote::MinerConfig& minerConfig) {
   assert(false);
 }
 

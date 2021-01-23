@@ -28,7 +28,6 @@
 #include "CryptoNoteProtocol/CryptoNoteProtocolHandler.h"
 #include "P2p/NetNode.h"
 #include "InProcessNode/InProcessNode.h"
-#include <../tests/Common/VectorMainChainStorage.h>
 
 using namespace CryptoNote;
 
@@ -76,9 +75,8 @@ void InProcTestNode::workerThread(std::promise<std::string>& initPromise) {
       CryptoNote::Checkpoints(log),
       dispatcher,
       std::unique_ptr<IBlockchainCacheFactory>(new MemoryBlockchainCacheFactory("", logger.getLogger())),
-      CryptoNote::createVectorMainChainStorage(m_currency)));
-
-    protocol.reset(new CryptoNote::CryptoNoteProtocolHandler(m_currency, dispatcher, *core, NULL, log));
+      std::thread::hardware_concurrency()));
+    protocol.reset(new CryptoNote::CryptoNoteProtocolHandler(m_currency, dispatcher, *core, nullptr, log));
     p2pNode.reset(new CryptoNote::NodeServer(dispatcher, *protocol, log));
     protocol->set_p2p_endpoint(p2pNode.get());
 

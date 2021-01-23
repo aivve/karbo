@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "crypto/crypto.h"
+#include "crypto/crypto-util.h"
 #include "crypto/hash.h"
 #include "crypto-tests.h"
 #include "../Io.h"
@@ -29,24 +30,11 @@
 using namespace std;
 typedef Crypto::Hash chash;
 
-bool operator !=(const Crypto::EllipticCurveScalar &a, const Crypto::EllipticCurveScalar &b) {
-  return 0 != memcmp(&a, &b, sizeof(Crypto::EllipticCurveScalar));
-}
-
-bool operator !=(const Crypto::EllipticCurvePoint &a, const Crypto::EllipticCurvePoint &b) {
-  return 0 != memcmp(&a, &b, sizeof(Crypto::EllipticCurvePoint));
-}
-
-bool operator !=(const Crypto::KeyDerivation &a, const Crypto::KeyDerivation &b) {
-  return 0 != memcmp(&a, &b, sizeof(Crypto::KeyDerivation));
-}
-
 int main(int argc, char *argv[]) {
   fstream input;
   string cmd;
   size_t test = 0;
   bool error = false;
-  setup_random();
   if (argc != 2) {
     cerr << "invalid arguments" << endl;
     return 1;
@@ -78,7 +66,7 @@ int main(int argc, char *argv[]) {
       vector<char> data;
       Crypto::EllipticCurveScalar expected, actual;
       get(input, data, expected);
-      hash_to_scalar(data.data(), data.size(), actual);
+      Crypto::hash_to_scalar(data.data(), data.size(), actual);
       if (expected != actual) {
         goto error;
       }

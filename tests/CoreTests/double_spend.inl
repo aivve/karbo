@@ -106,7 +106,7 @@ bool gen_double_spend_base<concrete_test>::check_double_spend(CryptoNote::Core& 
   //for (auto _ : blocks) cout << CryptoNote::CachedBlock(_).getBlockHash() << endl;
   CHECK_TEST_CONDITION(CachedBlock(m_last_valid_block).getBlockHash() == CachedBlock(blocks.back()).getBlockHash());
 
-  CHECK_EQ(concrete_test::expected_pool_txs_count, c.getPoolTransactionCount());
+  CHECK_EQ(concrete_test::expected_pool_txs_count, c.getPoolTransactionsCount());
 
   CryptoNote::AccountBase bob_account = boost::get<CryptoNote::AccountBase>(events[2]);
   CryptoNote::AccountBase alice_account = boost::get<CryptoNote::AccountBase>(events[3]);
@@ -146,8 +146,9 @@ bool gen_double_spend_in_tx<txs_keeped_by_block>::generate(std::vector<test_even
   destinations.push_back(de);
 
   CryptoNote::Transaction tx_1;
+  Crypto::SecretKey tx_key1;
   if (!constructTransaction(bob_account.getAccountKeys(), sources, destinations, std::vector<uint8_t>(), tx_1, 0,
-                            this->m_logger))
+                            tx_key1, this->m_logger))
     return false;
 
   SET_EVENT_VISITOR_SETT(events, event_visitor_settings::set_txs_keeped_by_block, txs_keeped_by_block);

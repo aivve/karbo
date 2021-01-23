@@ -78,8 +78,8 @@ namespace {
     nodeDaemons[NODE_0]->makeINode(node0);
     nodeDaemons[NODE_1]->makeINode(node1);
 
-    TestWalletLegacy wallet1(m_dispatcher, m_currency, *node0);
-    TestWalletLegacy wallet2(m_dispatcher, m_currency, *node1);
+    TestWalletLegacy wallet1(m_dispatcher, m_currency, *node0, m_logManager);
+    TestWalletLegacy wallet2(m_dispatcher, m_currency, *node1, m_logManager);
 
     ASSERT_FALSE(static_cast<bool>(wallet1.init()));
     ASSERT_FALSE(static_cast<bool>(wallet2.init()));

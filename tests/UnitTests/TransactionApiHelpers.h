@@ -62,7 +62,9 @@ namespace {
   }
   
   KeyImage generateKeyImage() {
-    return Crypto::rand<KeyImage>();
+    Crypto::KeyImage keyImage;
+    Random::randomBytes(32, keyImage.data);
+    return keyImage;
   }
 
   KeyImage generateKeyImage(const AccountKeys& keys, size_t idx, const PublicKey& txPubKey) {

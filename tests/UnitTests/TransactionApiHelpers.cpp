@@ -145,7 +145,9 @@ size_t TestTransactionBuilder::addFakeMultisignatureInput(uint64_t amount, uint3
     accs.push_back(generateAccount());
   }
 
-  msigInputs[idx] = MsigInfo{ Crypto::rand<PublicKey>(), 0, std::move(accs) };
+  Crypto::PublicKey key;
+  Random::randomBytes(32, key.data);
+  msigInputs[idx] = MsigInfo{ key, 0, std::move(accs) };
   return idx;
 }
 

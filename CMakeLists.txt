@@ -320,6 +320,15 @@ endif ()
 add_subdirectory(external)
 add_subdirectory(src)
 
+option(BUILD_TESTS "Build tests." OFF)
+
+if(BUILD_TESTS)
+  add_subdirectory(tests)
+  enable_testing()
+# copy CTestCustom.cmake to build dir to disable long running tests in 'make test'
+# configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CTestCustom.cmake ${CMAKE_CURRENT_BINARY_DIR})
+endif()
+
 ## We need to setup the RocksDB build environment to match our system
 include_directories(${CMAKE_SOURCE_DIR}/external/zstd/lib)
 if (NOT ROCKSDB_FOUND)

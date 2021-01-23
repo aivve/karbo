@@ -120,7 +120,7 @@ bool gen_chain_switch_1::check_split_not_switched(CryptoNote::Core& c, size_t ev
       boost::get<RawBlock>(events[21 + 2 * m_currency->minedMoneyUnlockWindow()]).block);
   CHECK_TEST_CONDITION(getBlockHash(blocks.back()) == getBlockHash(blk_4)); // blk_4
 
-  CHECK_EQ(2, c.getAlternativeBlockCount());
+  CHECK_EQ(2, c.getAlternativeBlocksCount());
 
   std::vector<CryptoNote::BlockTemplate> chain;
   map_hash2tx_t mtx;
@@ -168,7 +168,7 @@ bool gen_chain_switch_1::check_split_switched(CryptoNote::Core& c, size_t ev_ind
                        boost::get<BlockTemplate>(events[25 + 2 * m_currency->minedMoneyUnlockWindow()])); // blk_7
 
   auto alt_blocks = c.getAlternativeBlocks();
-  CHECK_EQ(2, c.getAlternativeBlockCount());
+  CHECK_EQ(2, c.getAlternativeBlocksCount());
 
   // Some blocks that were in main chain are in alt chain now
   for (const auto& b : alt_blocks) {

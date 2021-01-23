@@ -25,6 +25,7 @@
 #include "Common/FileMappedVector.h"
 #include "Common/StringTools.h"
 #include "crypto/crypto.h"
+#include "crypto/random.h"
 
 using namespace Common;
 
@@ -841,7 +842,7 @@ TEST_F(FileMappedVectorTest, pushBackCanIncreaseCapacity) {
 }
 
 TEST_F(FileMappedVectorTest, pushBackFlushesDataToDiskImmediately) {
-  char c = Crypto::rand<char>();
+  char c = (char)Random::randomValue<size_t>();
 
   FileMappedVector<char> vec(TEST_FILE_NAME);
   vec.push_back(c);

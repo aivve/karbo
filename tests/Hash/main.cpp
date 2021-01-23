@@ -22,6 +22,7 @@
 #include <string>
 
 #include "crypto/hash.h"
+#include "crypto/crypto.h"
 #include "../Io.h"
 
 using namespace std;

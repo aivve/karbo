@@ -29,6 +29,7 @@
 
 #include <System/Dispatcher.h>
 #include <Logging/ConsoleLogger.h>
+#include <Logging/LoggerManager.h>
 
 #include "CryptoNoteCore/Currency.h"
 #include "IWalletLegacy.h"
@@ -171,6 +172,7 @@ namespace Tests {
 #endif
 
       Logging::ConsoleLogger logger;
+      Logging::LoggerManager m_logManager;
       std::unique_ptr<CryptoNote::INode> mainNode;
       std::unique_ptr<CryptoNote::IWalletLegacy> workingWallet;
       uint64_t m_nextTimestamp;

@@ -267,7 +267,8 @@ TEST_F(TransactionApi, findOutputs) {
 }
 
 TEST_F(TransactionApi, setGetPaymentId) {
-  Hash paymentId = Crypto::rand<Hash>();
+  Hash paymentId;
+  Random::randomBytes(32, paymentId.data);
 
   ASSERT_FALSE(tx->getPaymentId(paymentId));
 

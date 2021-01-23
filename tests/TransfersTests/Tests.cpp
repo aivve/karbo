@@ -331,7 +331,7 @@ TEST_F(TransfersTest, base) {
   ITransfersContainer& transferContainer = transferSub.getContainer();
   transferSub.addObserver(&transferObserver);
 
-  Tests::Common::TestWalletLegacy wallet1(m_dispatcher, m_currency, *node1);
+  Tests::Common::TestWalletLegacy wallet1(m_dispatcher, m_currency, *node1, m_logManager);
   ASSERT_FALSE(static_cast<bool>(wallet1.init()));
   wallet1.wallet()->addObserver(&walletObserver);
   ASSERT_TRUE(mineBlocks(*nodeDaemons[0], wallet1.address(), 1));

@@ -82,8 +82,8 @@ namespace {
     CryptoNote::AccountBase minerAccount;
     minerAccount.generate();
 
-    TestWalletLegacy wallet1(m_dispatcher, m_currency, *node1);
-    TestWalletLegacy wallet2(m_dispatcher, m_currency, *node2);
+    TestWalletLegacy wallet1(m_dispatcher, m_currency, *node1, m_logManager);
+    TestWalletLegacy wallet2(m_dispatcher, m_currency, *node2, m_logManager);
 
     ASSERT_FALSE(static_cast<bool>(wallet1.init()));
     ASSERT_FALSE(static_cast<bool>(wallet2.init()));
@@ -172,8 +172,8 @@ namespace {
     CryptoNote::AccountBase minerAccount;
     minerAccount.generate();
 
-    TestWalletLegacy wallet1(m_dispatcher, m_currency, *node1);
-    TestWalletLegacy wallet2(m_dispatcher, m_currency, *node2);
+    TestWalletLegacy wallet1(m_dispatcher, m_currency, *node1, m_logManager);
+    TestWalletLegacy wallet2(m_dispatcher, m_currency, *node2, m_logManager);
 
     ASSERT_FALSE(static_cast<bool>(wallet1.init()));
     ASSERT_FALSE(static_cast<bool>(wallet2.init()));
@@ -270,7 +270,7 @@ namespace {
     CryptoNote::AccountBase minerAccount;
     minerAccount.generate();
 
-    TestWalletLegacy wallet1(m_dispatcher, m_currency, *node1);
+    TestWalletLegacy wallet1(m_dispatcher, m_currency, *node1, m_logManager);
     ASSERT_FALSE(static_cast<bool>(wallet1.init()));
 
     stopNode(NODE_4);
@@ -351,9 +351,9 @@ namespace {
     nodeDaemons[NODE_2]->makeINode(node2);
     nodeDaemons[NODE_3]->makeINode(node3);
 
-    TestWalletLegacy wallet0(m_dispatcher, m_currency, *node1);
-    TestWalletLegacy wallet1(m_dispatcher, m_currency, *node1);
-    TestWalletLegacy wallet2(m_dispatcher, m_currency, *node2);
+    TestWalletLegacy wallet0(m_dispatcher, m_currency, *node1, m_logManager);
+    TestWalletLegacy wallet1(m_dispatcher, m_currency, *node1, m_logManager);
+    TestWalletLegacy wallet2(m_dispatcher, m_currency, *node2, m_logManager);
 
     ASSERT_FALSE(static_cast<bool>(wallet0.init()));
     ASSERT_FALSE(static_cast<bool>(wallet1.init()));

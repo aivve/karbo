@@ -23,13 +23,15 @@
 #include "System/Dispatcher.h"
 #include "System/Event.h"
 #include "WalletLegacy/WalletLegacy.h"
+#include <Logging/LoggerRef.h>
+#include <Logging/LoggerManager.h>
 
 namespace Tests {
 namespace Common {
 
 class TestWalletLegacy : private CryptoNote::IWalletLegacyObserver {
 public:
-  TestWalletLegacy(System::Dispatcher& dispatcher, const CryptoNote::Currency& currency, CryptoNote::INode& node);
+  TestWalletLegacy(System::Dispatcher& dispatcher, const CryptoNote::Currency& currency, CryptoNote::INode& node, Logging::LoggerManager& log);
   ~TestWalletLegacy();
 
   std::error_code init();
@@ -46,6 +48,8 @@ private:
   System::Dispatcher& m_dispatcher;
   System::Event m_synchronizationCompleted;
   System::Event m_someTransactionUpdated;
+  Logging::LoggerManager& m_logManager;
+  Logging::LoggerRef logger;
 
   CryptoNote::INode& m_node;
   const CryptoNote::Currency& m_currency;

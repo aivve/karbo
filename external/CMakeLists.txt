@@ -5,13 +5,14 @@ set(WITH_MD_LIBRARY OFF CACHE BOOL "Code Generation for static library")
 
 add_subdirectory(miniupnpc)
 add_subdirectory(zstd)
+add_subdirectory(gtest)
 
 if (NOT ROCKSDB_FOUND)
   if(MSVC)
     add_subdirectory(rocksDB EXCLUDE_FROM_ALL)
-    set_property(TARGET upnpc-static rocksdb zstd PROPERTY FOLDER "external")
+    set_property(TARGET upnpc-static gtest gtest_main rocksdb zstd PROPERTY FOLDER "external")
   elseif(NOT MSVC)
-    set_property(TARGET upnpc-static zstd PROPERTY FOLDER "external")
+    set_property(TARGET upnpc-static gtest gtest_main zstd PROPERTY FOLDER "external")
     add_custom_target(
        rocksdb
        COMMAND $(MAKE) rocksdb

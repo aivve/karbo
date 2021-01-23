@@ -25,13 +25,15 @@ using namespace Crypto;
 
 const std::string TEST_PASSWORD = "password";
 
-TestWalletLegacy::TestWalletLegacy(System::Dispatcher& dispatcher, const Currency& currency, INode& node) :
+TestWalletLegacy::TestWalletLegacy(System::Dispatcher& dispatcher, const Currency& currency, INode& node, Logging::LoggerManager& log) :
     m_dispatcher(dispatcher),
     m_synchronizationCompleted(dispatcher),
     m_someTransactionUpdated(dispatcher),
     m_currency(currency),
     m_node(node),
-    m_wallet(new CryptoNote::WalletLegacy(currency, node)),
+    m_logManager(log),
+    logger(log, "TestWalletLegacy"),
+    m_wallet(new CryptoNote::WalletLegacy(currency, node, logger.getLogger())),
     m_currentHeight(0) {
   m_wallet->addObserver(this);
 }

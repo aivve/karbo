@@ -29,6 +29,7 @@
 #include "CryptoNoteCore/ICoreObserver.h"
 #include "CryptoNoteCore/IntrusiveLinkedList.h"
 #include "CryptoNoteCore/MessageQueue.h"
+#include "CryptoNoteCore/MinerConfig.h"
 #include "CryptoNoteCore/BlockchainMessages.h"
 #include "CryptoNoteProtocol/CryptoNoteProtocolDefinitions.h"
 #include "Rpc/CoreRpcServerCommandsDefinitions.h"
@@ -63,7 +64,7 @@ public:
   virtual CryptoNote::CoreStatistics getCoreStatistics() const override;
 
   virtual void save() override;
-  virtual void load() override;
+  virtual void load(const CryptoNote::MinerConfig& minerConfig) override;
 
   virtual std::vector<Crypto::Hash> findBlockchainSupplement(const std::vector<Crypto::Hash>& remoteBlockIds, size_t maxCount,
     uint32_t& totalBlockCount, uint32_t& startBlockIndex) const override;
@@ -83,7 +84,14 @@ public:
   virtual CryptoNote::BlockTemplate getBlockByHash(const Crypto::Hash &h) const override;
   virtual void getTransactions(const std::vector<Crypto::Hash>& txs_ids, std::vector<CryptoNote::BinaryArray>& txs, std::vector<Crypto::Hash>& missed_txs) const override;
   virtual CryptoNote::Difficulty getBlockDifficulty(uint32_t index) const override;
+  virtual CryptoNote::Difficulty getBlockCumulativeDifficulty(uint32_t blockIndex) const override { return 1; }
+  virtual CryptoNote::Difficulty getAvgDifficulty(uint32_t height, uint32_t window) const override { return 1; }
 
+  virtual bool getTransaction(const Crypto::Hash& transactionHash, CryptoNote::BinaryArray& transaction) const override { return true; };
+  virtual std::vector<std::pair<CryptoNote::Transaction, uint64_t>> getPoolTransactionsWithReceiveTime() const override;
+  virtual bool getPoolTransaction(const Crypto::Hash& transactionHash, CryptoNote::BinaryArray& transaction) const override { return true; };
+
+  virtual bool isInCheckpointZone(uint32_t height) const override { return false; };
 
   bool addObserver(CryptoNote::ICoreObserver* observer);
   bool removeObserver(CryptoNote::ICoreObserver* observer);
@@ -101,10 +109,36 @@ public:
 
   virtual bool hasTransaction(const Crypto::Hash& transactionHash) const override;
   virtual CryptoNote::BlockDetails getBlockDetails(const Crypto::Hash& blockHash) const override;
+  virtual CryptoNote::BlockDetails getBlockDetails(const uint32_t blockHeight, const uint32_t attempt) const override;
+  virtual CryptoNote::BlockDetailsShort getBlockDetailsLite(const Crypto::Hash& blockHash) const override;
+  virtual CryptoNote::BlockDetailsShort getBlockDetailsLite(uint32_t blockIndex) const override;
   virtual CryptoNote::TransactionDetails getTransactionDetails(const Crypto::Hash& transactionHash) const override;
+  virtual CryptoNote::TransactionDetails getTransactionDetails(const CryptoNote::Transaction& rawTransaction, const uint64_t timestamp, bool foundInPool) const override;
   virtual std::vector<Crypto::Hash> getAlternativeBlockHashesByIndex(uint32_t blockIndex) const override;
   virtual std::vector<Crypto::Hash> getBlockHashesByTimestamps(uint64_t timestampBegin, size_t secondsCount) const override { return {};}
   virtual std::vector<Crypto::Hash> getTransactionHashesByPaymentId(const Crypto::Hash& paymentId) const override { return {}; }
+
+  virtual bool getTransactionsByPaymentId(const Crypto::Hash& paymentId, std::vector<CryptoNote::Transaction>& transactions) override;
+  virtual bool getBlockIndexContainingTransaction(const Crypto::Hash& transactionHash, uint32_t& blockIndex) override;
+
+  virtual void rewind(const uint32_t blockIndex) override;
+
+  virtual uint64_t getMinimalFee(uint32_t height) override;
+  virtual uint64_t getMinimalFee() override;
+  virtual uint64_t calculateReward(uint64_t alreadyGeneratedCoins) const override;
+  virtual bool getMixin(const CryptoNote::Transaction& transaction, uint64_t& mixin) override;
+
+  virtual bool on_idle() override;
+  virtual void pauseMining() override;
+  virtual void updateBlockTemplateAndResumeMining() override;
+  virtual void onSynchronized() override;
+
+  virtual size_t getPoolTransactionsCount() const override;
+  virtual size_t getBlockchainTransactionsCount() const override;
+  virtual size_t getAlternativeBlocksCount() const override;
+  virtual std::vector<Crypto::Hash> getAlternativeBlocksHashes() const override;
+  virtual uint64_t getTotalGeneratedAmount() const override;
+  virtual uint32_t getCurrentBlockchainHeight() const override;
 
 private:
   uint32_t topHeight;

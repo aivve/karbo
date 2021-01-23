@@ -38,7 +38,7 @@ bool lift_up_difficulty(const CryptoNote::Currency& currency, std::vector<test_e
   CryptoNote::BlockTemplate blk_prev = blk_last;
   for (size_t i = 0; i < new_block_count; ++i) {
     CryptoNote::BlockTemplate blk_next;
-    CryptoNote::Difficulty diffic = currency.nextDifficulty(timestamps, cummulative_difficulties);
+    CryptoNote::Difficulty diffic = currency.nextDifficulty(blk_prev.majorVersion, boost::get<BaseInput>(blk_prev.baseTransaction.inputs[0]).blockIndex, timestamps, cummulative_difficulties);
     if (!generator.constructBlockManually(blk_next, blk_prev, miner_account,
                                           test_generator::bf_major_ver | test_generator::bf_timestamp |
                                               test_generator::bf_diffic,
@@ -257,9 +257,9 @@ bool gen_block_invalid_nonce::generate(std::vector<test_event_entry>& events) co
   }
 
   // Create invalid nonce
-  Difficulty diffic = m_currency->nextDifficulty(timestamps, commulative_difficulties);
-  assert(1 < diffic);
   const BlockTemplate& blk_last = boost::get<BlockTemplate>(events.back());
+  Difficulty diffic = m_currency->nextDifficulty(blk_last.majorVersion, boost::get<BaseInput>(blk_last.baseTransaction.inputs[0]).blockIndex, timestamps, commulative_difficulties);
+  assert(1 < diffic);
   uint64_t timestamp = blk_last.timestamp;
   BlockTemplate blk_3;
   do {
@@ -444,8 +444,8 @@ bool gen_block_miner_tx_has_2_in::generate(std::vector<test_event_entry>& events
   destinations.push_back(de);
 
   Transaction tmp_tx;
-  if (!constructTransaction(miner_account.getAccountKeys(), sources, destinations, std::vector<uint8_t>(), tmp_tx, 0,
-                            m_logger))
+  Crypto::SecretKey tmp_tx_key;
+  if (!constructTransaction(miner_account.getAccountKeys(), sources, destinations, std::vector<uint8_t>(), tmp_tx,  0, tmp_tx_key, m_logger))
     return false;
 
   MAKE_MINER_TX_MANUALLY(miner_tx, blk_0f);
@@ -490,8 +490,8 @@ bool gen_block_miner_tx_with_txin_to_key::generate(std::vector<test_event_entry>
   destinations.push_back(de);
 
   Transaction tmp_tx;
-  if (!constructTransaction(miner_account.getAccountKeys(), sources, destinations, std::vector<uint8_t>(), tmp_tx, 0,
-                            m_logger))
+  Crypto::SecretKey tmp_tx_key;
+  if (!constructTransaction(miner_account.getAccountKeys(), sources, destinations, std::vector<uint8_t>(), tmp_tx, 0, tmp_tx_key, m_logger))
     return false;
 
   MAKE_MINER_TX_MANUALLY(miner_tx, blk_1);
@@ -684,7 +684,7 @@ bool gen_block_invalid_binary_format::generate(std::vector<test_event_entry>& ev
   Difficulty diffic;
   do {
     blk_last = boost::get<BlockTemplate>(events.back());
-    diffic = m_currency->nextDifficulty(timestamps, cummulative_difficulties);
+    diffic = m_currency->nextDifficulty(blk_last.majorVersion, boost::get<BaseInput>(blk_last.baseTransaction.inputs[0]).blockIndex, timestamps, cummulative_difficulties);
     if (!lift_up_difficulty(*m_currency, events, timestamps, cummulative_difficulties, generator, 1, blk_last,
                             miner_account, m_blockMajorVersion)) {
       return false;
@@ -700,7 +700,7 @@ bool gen_block_invalid_binary_format::generate(std::vector<test_event_entry>& ev
   std::vector<Crypto::Hash> tx_hashes;
   tx_hashes.push_back(getObjectHash(tx_0));
   size_t txs_size = getObjectBinarySize(tx_0);
-  diffic = m_currency->nextDifficulty(timestamps, cummulative_difficulties);
+  diffic = m_currency->nextDifficulty(blk_last.majorVersion, boost::get<BaseInput>(blk_last.baseTransaction.inputs[0]).blockIndex, timestamps, cummulative_difficulties);
   if (!generator.constructBlockManually(
           blk_test, blk_last, miner_account, test_generator::bf_major_ver | test_generator::bf_diffic |
                                                  test_generator::bf_timestamp | test_generator::bf_tx_hashes,
@@ -743,7 +743,7 @@ bool gen_block_invalid_binary_format::check_all_blocks_purged(CryptoNote::Core& 
                                                               const std::vector<test_event_entry>& events) {
   DEFINE_TESTS_ERROR_CONTEXT("gen_block_invalid_binary_format::check_all_blocks_purged");
 
-  CHECK_EQ(1, c.getPoolTransactionCount());
+  CHECK_EQ(1, c.getPoolTransactionsCount());
   CHECK_EQ(m_corrupt_blocks_begin_idx - 2, c.getTopBlockIndex() + 1);
 
   return true;
