@@ -577,7 +577,7 @@ Difficulty Currency::nextDifficultyV2(std::vector<uint64_t> timestamps,
 
 	// minimum limit
 	if (!isTestnet() && nextDiffZ < 100000) {
-		nextDiffZ = 100000;
+		//nextDiffZ = 100000;
 	}
 
 	return nextDiffZ;
@@ -640,7 +640,7 @@ Difficulty Currency::nextDifficultyV3(std::vector<uint64_t> timestamps,
 
 	// minimum limit
 	if (!isTestnet() && next_difficulty < 100000) {
-		next_difficulty = 100000;
+		//next_difficulty = 100000;
 	}
 
 	return next_difficulty;
@@ -703,7 +703,7 @@ Difficulty Currency::nextDifficultyV4(uint32_t height, uint8_t blockMajorVersion
 
 	// minimum limit
 	if (!isTestnet() && next_D < 100000) {
-		next_D = 100000;
+		//next_D = 100000;
 	}
 
 	return next_D;
@@ -718,8 +718,8 @@ Difficulty Currency::nextDifficultyV5(uint32_t height, uint8_t blockMajorVersion
   // https://github.com/zawy12/difficulty-algorithms/issues/3
 
   // reset difficulty for new epoch
-  if (height == upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) + 1) {
-    return 1000000; //return (cumulativeDifficulties[0] - cumulativeDifficulties[1]) / RESET_WORK_FACTOR;
+  if (height == upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5)) {
+    return 1000; //return (cumulativeDifficulties[0] - cumulativeDifficulties[1]) / RESET_WORK_FACTOR;
   }
   uint32_t count = (uint32_t)difficultyBlocksCountByBlockVersion(blockMajorVersion);
   if (height > upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) && height < CryptoNote::parameters::UPGRADE_HEIGHT_V5 + count) {
@@ -760,7 +760,7 @@ Difficulty Currency::nextDifficultyV5(uint32_t height, uint8_t blockMajorVersion
 
   // minimum limit
   if (!isTestnet() && next_D < 1000000) {
-    next_D = 1000000;
+    //next_D = 1000000;
   }
 
   return next_D;
