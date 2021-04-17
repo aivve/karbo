@@ -194,7 +194,8 @@ const uint32_t P2P_IDLE_CONNECTION_KILL_INTERVAL             = (5 * 60);      //
 const char     P2P_STAT_TRUSTED_PUB_KEY[]                    = "";
 
 const char* const SEED_NODES[] = {
-  "46.149.182.151:12347" 
+  "46.149.182.151:12347"
+, "151.115.37.223:12347"
 };
 
 } // CryptoNote
