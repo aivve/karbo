@@ -565,57 +565,52 @@ bool Core::checkProofOfWork(Crypto::cn_context& context, const CachedBlock& bloc
   return true;
 }
 
-bool Core::getBlockLongHash(Crypto::cn_context &context, const CachedBlock& b, Crypto::Hash& res) {
-  if (b.getBlock().majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
-    res = b.getBlockLongHash(context);
+bool Core::getBlockLongHash(Crypto::cn_context &context, const CachedBlock& block, Crypto::Hash& res) const {
+  if (block.getBlock().majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    res = block.getBlockLongHash(context);
     return true;
   }
 
-  BinaryArray pot = b.getSignedBlockHashingBinaryArray();
+  BinaryArray pot = block.getSignedBlockHashingBinaryArray();
 
   // Phase 1
 
   Crypto::Hash hash_1, hash_2;
 
-  // Hashing the current blockdata (preprocessing it)
-  cn_fast_hash(pot.data(), pot.size(), hash_1);
+  auto cache = findSegmentContainingBlock(block.getBlock().previousBlockHash);
+  uint32_t maxHeight = std::min<uint32_t>(getTopBlockIndex(), block.getBlockIndex() - 1 - currency.minedMoneyUnlockWindow());
 
-  // Phase 2
+#define ITER 128
+  for (uint32_t i = 0; i < ITER; i++) {
+    cn_fast_hash(pot.data(), pot.size(), hash_1);
 
-  // Get the corresponding 8 blocks from blockchain based on preparatory hash_1
-  // and throw them into the pot too
-  auto cache = findSegmentContainingBlock(b.getBlock().previousBlockHash);
-  uint32_t maxHeight = std::min<uint32_t>(getTopBlockIndex(), b.getBlockIndex() - 1 - currency.minedMoneyUnlockWindow());
+    for (uint8_t j = 1; j <= 8; j++) {
+      uint8_t chunk[4] = {
+        hash_1.data[j * 4 - 4],
+        hash_1.data[j * 4 - 3],
+        hash_1.data[j * 4 - 2],
+        hash_1.data[j * 4 - 1]
+      };
 
-  for (uint8_t i = 1; i <= 8; i++) {
-    uint8_t chunk[4] = {
-      hash_1.data[i * 4 - 4],
-      hash_1.data[i * 4 - 3],
-      hash_1.data[i * 4 - 2],
-      hash_1.data[i * 4 - 1]
-    };
+      uint32_t n = (chunk[0] << 24) |
+        (chunk[1] << 16) |
+        (chunk[2] << 8) |
+        (chunk[3]);
 
-    uint32_t n = (chunk[0] << 24) |
-                 (chunk[1] << 16) |
-                 (chunk[2] << 8)  |
-                 (chunk[3]);
-
-    uint32_t height_i = n % maxHeight;
-    try {
-      RawBlock rawBlock = cache->getBlockByIndex(height_i);
-      BlockTemplate blockTemplate = extractBlockTemplate(rawBlock);
-      BinaryArray ba = CachedBlock(blockTemplate).getBlockHashingBinaryArray();
-      pot.insert(std::end(pot), std::begin(ba), std::end(ba));
-    }
-    catch (const std::runtime_error& e) {
-      logger(Logging::ERROR, Logging::BRIGHT_RED) << "Error getting block " << height_i << ": " << *e.what();
-      return false;
+      uint32_t height_j = n % maxHeight;
+      try {
+        RawBlock rawBlock = cache->getBlockByIndex(height_j);
+        BlockTemplate blockTemplate = extractBlockTemplate(rawBlock);
+        BinaryArray ba = CachedBlock(blockTemplate).getBlockHashingBinaryArray();
+        pot.insert(std::end(pot), std::begin(ba), std::end(ba));
+      }
+      catch (const std::runtime_error& e) {
+        logger(Logging::ERROR, Logging::BRIGHT_RED) << "Error getting block " << height_j << ": " << *e.what();
+        return false;
+      }
     }
   }
 
-  // Phase 3
-
-  // stir the pot - hashing the 1 + 8 blocks as one continuous data
   if (!Crypto::y_slow_hash(pot.data(), pot.size(), hash_1, hash_2)) {
     logger(Logging::ERROR, Logging::BRIGHT_RED) << "Error getting Yespower hash";
     return false;
@@ -703,6 +698,17 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
     return blockValidationResult;
   }
 
+  // check block signature
+  if (blockTemplate.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    BinaryArray ba = cachedBlock.getBlockHashingBinaryArray();
+    Crypto::Hash sigHash = Crypto::cn_fast_hash(ba.data(), ba.size());
+    Crypto::PublicKey ephPubKey = boost::get<KeyOutput>(blockTemplate.baseTransaction.outputs[0].target).key;
+    if (!Crypto::check_signature(sigHash, ephPubKey, blockTemplate.signature)) {
+      logger(Logging::WARNING, Logging::BRIGHT_RED) << "Signature mismatch in block " << blockStr;
+      return error::BlockValidationError::BLOCK_SIGNATURE_MISMATCH;
+    }
+  }
+
   auto currentDifficulty = cache->getDifficultyForNextBlock(previousBlockIndex);
   if (currentDifficulty == 0) {
     logger(Logging::WARNING) << "Block " << blockStr << " has difficulty overhead";
@@ -786,44 +792,6 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
     return error::BlockValidationError::PROOF_OF_WORK_TOO_WEAK;
   }
   
-  if (blockTemplate.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
-    // check miner account
-    Crypto::PublicKey pub;
-    if (!secret_key_to_public_key(blockTemplate.minerViewKey, pub) && pub != blockTemplate.minerAddress.viewPublicKey) {
-      logger(Logging::WARNING, Logging::BRIGHT_RED) << "Miner address doesn't match miner's view key.";
-      return error::BlockValidationError::BLOCK_MINER_ADDRESS_MISMATCH;
-    }
-
-    // check block signature
-    BinaryArray ba = cachedBlock.getBlockHashingBinaryArray();
-    Crypto::Hash sigHash = Crypto::cn_fast_hash(ba.data(), ba.size());
-    if (!Crypto::check_signature(sigHash, blockTemplate.minerAddress.spendPublicKey, blockTemplate.signature))
-    {
-      logger(Logging::WARNING, Logging::BRIGHT_RED) << "Signature mismatch in block " << blockStr;
-      return error::BlockValidationError::BLOCK_SIGNATURE_MISMATCH;
-    }
-
-    // check that reward goes to the miner adddress
-    AccountKeys minerAcc;
-    minerAcc.address = blockTemplate.minerAddress;
-    minerAcc.viewSecretKey = blockTemplate.minerViewKey;
-    
-    uint64_t received = 0;
-    std::vector<size_t> outs;
-
-    if (!lookup_acc_outs(minerAcc, blockTemplate.baseTransaction, outs, received)) {
-      logger(Logging::WARNING) << "Failed to lookup miner reward in block " << blockStr;
-      return error::BlockValidationError::BLOCK_REWARD_MISMATCH;
-    }
-
-    if (expectedReward != received) {
-      logger(Logging::WARNING) << "Block reward mismatch for block " << blockStr
-                               << ". Attached miner address only got " << currency.formatAmount(received)
-                               << " of expected " << currency.formatAmount(expectedReward);                               
-      return error::BlockValidationError::BLOCK_REWARD_MISMATCH;
-    }
-  }
-
   auto ret = error::AddBlockErrorCode::ADDED_TO_ALTERNATIVE;
 
   if (addOnTop) {
@@ -1537,7 +1505,7 @@ bool Core::getBlockTemplate(BlockTemplate& b, const AccountKeys& acc, const Bina
   */
   // make blocks coin-base tx looks close to real coinbase tx to get truthful blob size
   bool r = currency.constructMinerTx(b.majorVersion, height, medianSize, alreadyGeneratedCoins, transactionsSize, fee, acc.address,
-                                     b.baseTransaction, tx_key, extraNonce, 14);
+                                     b.baseTransaction, tx_key, extraNonce, b.majorVersion >= BLOCK_MAJOR_VERSION_5 ? 1 : 14);
   if (!r) {
     logger(Logging::ERROR, Logging::BRIGHT_RED) << "Failed to construct miner tx, first chance";
     return false;
@@ -1547,7 +1515,7 @@ bool Core::getBlockTemplate(BlockTemplate& b, const AccountKeys& acc, const Bina
   const size_t TRIES_COUNT = 10;
   for (size_t tryCount = 0; tryCount < TRIES_COUNT; ++tryCount) {
     r = currency.constructMinerTx(b.majorVersion, height, medianSize, alreadyGeneratedCoins, cumulativeSize, fee, acc.address,
-                                  b.baseTransaction, tx_key, extraNonce, 14);
+                                  b.baseTransaction, tx_key, extraNonce, b.majorVersion >= BLOCK_MAJOR_VERSION_5 ? 1 : 14);
     if (!r) {
       logger(Logging::ERROR, Logging::BRIGHT_RED) << "Failed to construct miner tx, second chance";
       return false;
@@ -1593,11 +1561,6 @@ bool Core::getBlockTemplate(BlockTemplate& b, const AccountKeys& acc, const Bina
           << " is not equal txs_cumulative_size=" << transactionsSize
           << " + get_object_blobsize(b.baseTransaction)=" << getObjectBinarySize(b.baseTransaction);
       return false;
-    }
-
-    if (b.majorVersion >= BLOCK_MAJOR_VERSION_5) {
-        b.minerAddress = acc.address;
-        b.minerViewKey = acc.viewSecretKey;
     }
 
     return true;
@@ -1834,6 +1797,10 @@ std::error_code Core::validateBlock(const CachedBlock& cachedBlock, IBlockchainC
   if (!block.baseTransaction.signatures.empty())
   {
     return error::TransactionValidationError::BASE_INVALID_SIGNATURES_COUNT;
+  }
+
+  if (block.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 && !(block.baseTransaction.outputs.size() == 1)) {
+    return error::TransactionValidationError::OUTPUTS_INVALID_COUNT;
   }
 
   for (const auto& output : block.baseTransaction.outputs) {
@@ -2354,7 +2321,7 @@ BlockDetails Core::getBlockDetails(const Crypto::Hash& blockHash) const {
   uint32_t blockIndex = segment->getBlockIndex(blockHash);
   BlockTemplate blockTemplate = restoreBlockTemplate(segment, blockIndex);
   
-  BlockDetails blockDetails;
+  BlockDetails blockDetails = boost::value_initialized<BlockDetails>();
   blockDetails.majorVersion = blockTemplate.majorVersion;
   blockDetails.minorVersion = blockTemplate.minorVersion;
   blockDetails.timestamp = blockTemplate.timestamp;
@@ -2373,8 +2340,12 @@ BlockDetails Core::getBlockDetails(const Crypto::Hash& blockHash) const {
   blockDetails.isAlternative = mainChainSet.count(segment) == 0;
 
   Crypto::cn_context context;
-  blockDetails.proofOfWork = CachedBlock(blockTemplate).getBlockLongHash(context);
-
+  Crypto::Hash proofOfWork;
+  CachedBlock cb(blockTemplate);
+  if (getBlockLongHash(context, cb, proofOfWork)) {
+    blockDetails.proofOfWork = proofOfWork;
+  }
+  
   blockDetails.difficulty = getBlockDifficulty(blockIndex);
 
   blockDetails.cumulativeDifficulty = segment->getCurrentCumulativeDifficulty(blockDetails.index);
@@ -2428,8 +2399,6 @@ BlockDetails Core::getBlockDetails(const Crypto::Hash& blockHash) const {
   }
 
   if (blockDetails.majorVersion >= BLOCK_MAJOR_VERSION_5) {
-    blockDetails.minerAddress = blockTemplate.minerAddress;
-    blockDetails.minerViewKey = blockTemplate.minerViewKey;
     blockDetails.minerSignature = blockTemplate.signature;
   }
 
@@ -2469,11 +2438,8 @@ BlockDetailsShort Core::getBlockDetailsLite(const Crypto::Hash& blockHash) const
   uint64_t coinbaseTransactionSize = getObjectBinarySize(blockTemplate.baseTransaction);
   blockDetails.blockSize = blockBlobSize + sizes.front() - coinbaseTransactionSize;
   blockDetails.transactionsCount = blockTemplate.transactionHashes.size() + 1;
-  if (blockTemplate.majorVersion >= BLOCK_MAJOR_VERSION_5)
-    blockDetails.minerAddress = blockTemplate.minerAddress;
   return blockDetails;
 }
-
 
 TransactionDetails Core::getTransactionDetails(const Crypto::Hash& transactionHash) const {
   throwIfNotInitialized();
